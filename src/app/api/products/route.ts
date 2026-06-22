@@ -6,6 +6,43 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     
+    const slug = searchParams.get('slug')
+    const limit = parseInt(searchParams.get('limit') || '12')
+    
+    // If slug is provided, return single product
+    if (slug) {
+      const product = await prisma.product.findFirst({
+        where: { slug, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          price: true,
+          discountPrice: true,
+          discount: true,
+          images: true,
+          rating: true,
+          reviewCount: true,
+          stock: true,
+          sku: true,
+          weight: true,
+          category: {
+            select: { id: true, name: true, slug: true },
+          },
+        },
+      })
+      
+      if (!product) {
+        return NextResponse.json(
+          { success: false, error: 'Product not found' },
+          { status: 404 }
+        )
+      }
+      
+      return NextResponse.json(product)
+    }
+    
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '12')
     const search = searchParams.get('search') || ''
@@ -37,22 +74,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Build orderBy clause
-    let orderBy: any = {}
+    let orderBy: any = []
     switch (sort) {
       case 'price-low':
-        orderBy = { discountPrice: 'asc' }
+        orderBy = [{ discountPrice: 'asc' }]
         break
       case 'price-high':
-        orderBy = { discountPrice: 'desc' }
+        orderBy = [{ discountPrice: 'desc' }]
         break
       case 'rating':
-        orderBy = { rating: 'desc' }
+        orderBy = [{ rating: 'desc' }]
         break
       case 'newest':
-        orderBy = { createdAt: 'desc' }
+        orderBy = [{ createdAt: 'desc' }]
         break
       default:
-        orderBy = { isFeatured: 'desc', createdAt: 'desc' }
+        orderBy = [{ isFeatured: 'desc' }, { createdAt: 'desc' }]
     }
 
     // Fetch products

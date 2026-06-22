@@ -1,14 +1,15 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useCart, useTheme } from '@/store'
+import { useCart, useTheme, useWishlist } from '@/store'
 import { Button } from '@/components/ui/button'
 import {
   Search,
   ShoppingCart,
+  Heart,
   Menu,
   X,
   Moon,
@@ -16,15 +17,26 @@ import {
   LogOut,
   LogIn,
   User,
+  Settings,
 } from 'lucide-react'
 
 export function Header() {
   const { data: session } = useSession()
   const { items: cartItems, getItemCount } = useCart()
+  const { items: wishlistItems } = useWishlist()
   const { isDark, toggleDarkMode } = useTheme()
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [itemCount, setItemCount] = useState(0)
+  const [wishlistCount, setWishlistCount] = useState(0)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    setItemCount(getItemCount())
+    setWishlistCount(wishlistItems.length)
+  }, [getItemCount, wishlistItems])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,13 +106,25 @@ export function Header() {
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
+            {/* Wishlist */}
+            <Link href="/wishlist">
+              <Button variant="ghost" size="icon" className="relative">
+                <Heart size={20} />
+                {mounted && wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
             {/* Cart */}
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart size={20} />
-                {getItemCount() > 0 && (
+                {mounted && itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-secondary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {getItemCount()}
+                    {itemCount}
                   </span>
                 )}
               </Button>
@@ -114,6 +138,14 @@ export function Header() {
                     <User size={18} className="mr-2" />
                     Dashboard
                   </Button>
+                </Link>
+                <Link href="/profile">
+                  <button
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    title="Profile Settings"
+                  >
+                    <Settings size={20} />
+                  </button>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -173,6 +205,13 @@ export function Header() {
 
             {/* Mobile Actions */}
             <div className="space-y-2 border-t border-border pt-3">
+              <Link href="/wishlist" className="block">
+                <Button className="w-full" variant="outline">
+                  <Heart size={18} className="mr-2" />
+                  Wishlist ({wishlistCount})
+                </Button>
+              </Link>
+
               <Link href="/cart" className="block">
                 <Button className="w-full" variant="outline">
                   <ShoppingCart size={18} className="mr-2" />
@@ -185,6 +224,12 @@ export function Header() {
                   <Link href="/dashboard" className="block">
                     <Button className="w-full" variant="outline">
                       Dashboard
+                    </Button>
+                  </Link>
+                  <Link href="/profile" className="block">
+                    <Button className="w-full" variant="outline">
+                      <Settings size={18} className="mr-2" />
+                      Profile
                     </Button>
                   </Link>
                   <Button

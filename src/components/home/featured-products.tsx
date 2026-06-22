@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { useCart, useWishlist } from '@/store'
 import { Heart, ShoppingCart, Star } from 'lucide-react'
 import { formatCurrency } from '@/utils'
-import type { Product } from '@types'
+import type { Product } from '@/types'
 
 export function FeaturedProducts() {
   const { data: response } = useQuery({
@@ -102,13 +102,27 @@ export function FeaturedProducts() {
                   <Card className="h-full cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-lg">
                     {/* Image */}
                     <div className="relative w-full h-48 bg-slate-100 dark:bg-slate-800 overflow-hidden group">
-                      {product.images[0] && (
+                      {product.images[0] ? (
                         <Image
                           src={product.images[0]}
                           alt={product.name}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement
+                            img.style.display = 'none'
+                            // Don't try to replace with another external image
+                            const placeholder = document.createElement('div')
+                            placeholder.className = 'w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-slate-500 text-sm'
+                            placeholder.textContent = product.name
+                            img.parentElement?.appendChild(placeholder)
+                          }}
+                          unoptimized
                         />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-slate-500 text-sm">
+                          {product.name}
+                        </div>
                       )}
 
                       {/* Discount Badge */}

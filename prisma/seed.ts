@@ -398,6 +398,318 @@ const products = [
     reviewCount: 76,
     isFeatured: true,
   },
+  {
+    name: 'Mixed Nuts 200g',
+    slug: 'mixed-nuts-200g',
+    description: 'Healthy mix of almonds, cashews and walnuts',
+    price: 350,
+    discountPrice: 280,
+    discount: 20,
+    categorySlug: 'snacks',
+    sku: 'SNACK003',
+    stock: 80,
+    weight: 0.2,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.6,
+    reviewCount: 91,
+    isFeatured: true,
+  },
+
+  // Frozen Foods
+  {
+    name: 'Frozen Peas 500g',
+    slug: 'frozen-peas-500g',
+    description: 'Fresh frozen peas, ready to cook',
+    price: 80,
+    discountPrice: 65,
+    discount: 19,
+    categorySlug: 'frozen-foods',
+    sku: 'FROZEN001',
+    stock: 90,
+    weight: 0.5,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.3,
+    reviewCount: 58,
+    isFeatured: false,
+  },
+  {
+    name: 'Frozen Vegetables Mix',
+    slug: 'frozen-vegetables-mix',
+    description: 'Mix of frozen broccoli, carrot and corn',
+    price: 120,
+    discountPrice: 99,
+    discount: 18,
+    categorySlug: 'frozen-foods',
+    sku: 'FROZEN002',
+    stock: 70,
+    weight: 0.5,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.4,
+    reviewCount: 72,
+    isFeatured: true,
+  },
+  {
+    name: 'Frozen Berries 400g',
+    slug: 'frozen-berries-400g',
+    description: 'Mix of frozen strawberries, blueberries and raspberries',
+    price: 200,
+    discountPrice: 160,
+    discount: 20,
+    categorySlug: 'frozen-foods',
+    sku: 'FROZEN003',
+    stock: 50,
+    weight: 0.4,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.5,
+    reviewCount: 85,
+    isFeatured: false,
+  },
+
+  // Organic
+  {
+    name: 'Organic Brown Rice 2kg',
+    slug: 'organic-brown-rice-2kg',
+    description: '100% organic brown rice, no pesticides',
+    price: 250,
+    discountPrice: 210,
+    discount: 16,
+    categorySlug: 'organic',
+    sku: 'ORG001',
+    stock: 60,
+    weight: 2,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.6,
+    reviewCount: 94,
+    isFeatured: true,
+  },
+  {
+    name: 'Organic Honey 500ml',
+    slug: 'organic-honey-500ml',
+    description: 'Pure organic honey from local beekeepers',
+    price: 300,
+    discountPrice: 250,
+    discount: 17,
+    categorySlug: 'organic',
+    sku: 'ORG002',
+    stock: 40,
+    weight: 0.5,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.7,
+    reviewCount: 102,
+    isFeatured: true,
+  },
+  {
+    name: 'Organic Olive Oil 500ml',
+    slug: 'organic-olive-oil-500ml',
+    description: 'Extra virgin organic olive oil from Spain',
+    price: 450,
+    discountPrice: 380,
+    discount: 16,
+    categorySlug: 'organic',
+    sku: 'ORG003',
+    stock: 35,
+    weight: 0.5,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.8,
+    reviewCount: 78,
+    isFeatured: true,
+  },
+  {
+    name: 'Organic Almonds 250g',
+    slug: 'organic-almonds-250g',
+    description: 'Raw organic almonds from California',
+    price: 400,
+    discountPrice: 330,
+    discount: 18,
+    categorySlug: 'organic',
+    sku: 'ORG004',
+    stock: 45,
+    weight: 0.25,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.5,
+    reviewCount: 89,
+    isFeatured: false,
+  },
+  {
+    name: 'Organic Lentils 1kg',
+    slug: 'organic-lentils-1kg',
+    description: 'High protein organic red lentils',
+    price: 180,
+    discountPrice: 150,
+    discount: 17,
+    categorySlug: 'organic',
+    sku: 'ORG005',
+    stock: 70,
+    weight: 1,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.4,
+    reviewCount: 64,
+    isFeatured: false,
+  },
+
+  // Household Items
+  {
+    name: 'Dishwash Liquid 500ml',
+    slug: 'dishwash-liquid-500ml',
+    description: 'Powerful dishwash liquid for clean dishes',
+    price: 120,
+    discountPrice: 99,
+    discount: 18,
+    categorySlug: 'household-items',
+    sku: 'HH001',
+    stock: 100,
+    weight: 0.5,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.3,
+    reviewCount: 76,
+    isFeatured: false,
+  },
+  {
+    name: 'All-Purpose Cleaner 750ml',
+    slug: 'all-purpose-cleaner-750ml',
+    description: 'Effective cleaner for all surfaces',
+    price: 150,
+    discountPrice: 120,
+    discount: 20,
+    categorySlug: 'household-items',
+    sku: 'HH002',
+    stock: 80,
+    weight: 0.75,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.4,
+    reviewCount: 82,
+    isFeatured: true,
+  },
+  {
+    name: 'Laundry Detergent 1kg',
+    slug: 'laundry-detergent-1kg',
+    description: 'Powerful laundry detergent for bright clothes',
+    price: 200,
+    discountPrice: 160,
+    discount: 20,
+    categorySlug: 'household-items',
+    sku: 'HH003',
+    stock: 90,
+    weight: 1,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.5,
+    reviewCount: 95,
+    isFeatured: true,
+  },
+  {
+    name: 'Trash Bags 30pcs',
+    slug: 'trash-bags-30pcs',
+    description: 'Durable trash bags for waste management',
+    price: 80,
+    discountPrice: 65,
+    discount: 19,
+    categorySlug: 'household-items',
+    sku: 'HH004',
+    stock: 120,
+    weight: 0.5,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.2,
+    reviewCount: 71,
+    isFeatured: false,
+  },
+  {
+    name: 'Aluminum Foil 100m',
+    slug: 'aluminum-foil-100m',
+    description: 'High-quality aluminum foil for cooking',
+    price: 120,
+    discountPrice: 99,
+    discount: 18,
+    categorySlug: 'household-items',
+    sku: 'HH005',
+    stock: 70,
+    weight: 0.3,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.3,
+    reviewCount: 58,
+    isFeatured: false,
+  },
+
+  // Personal Care
+  {
+    name: 'Toothpaste 100g',
+    slug: 'toothpaste-100g',
+    description: 'Fluoride-enriched toothpaste for healthy teeth',
+    price: 80,
+    discountPrice: 65,
+    discount: 19,
+    categorySlug: 'personal-care',
+    sku: 'PC001',
+    stock: 110,
+    weight: 0.1,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.4,
+    reviewCount: 87,
+    isFeatured: true,
+  },
+  {
+    name: 'Shampoo 250ml',
+    slug: 'shampoo-250ml',
+    description: 'Mild shampoo for all hair types',
+    price: 150,
+    discountPrice: 120,
+    discount: 20,
+    categorySlug: 'personal-care',
+    sku: 'PC002',
+    stock: 85,
+    weight: 0.25,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.5,
+    reviewCount: 102,
+    isFeatured: true,
+  },
+  {
+    name: 'Conditioner 250ml',
+    slug: 'conditioner-250ml',
+    description: 'Nourishing conditioner for soft hair',
+    price: 150,
+    discountPrice: 120,
+    discount: 20,
+    categorySlug: 'personal-care',
+    sku: 'PC003',
+    stock: 80,
+    weight: 0.25,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.4,
+    reviewCount: 89,
+    isFeatured: false,
+  },
+  {
+    name: 'Body Wash 250ml',
+    slug: 'body-wash-250ml',
+    description: 'Refreshing body wash with natural ingredients',
+    price: 120,
+    discountPrice: 99,
+    discount: 18,
+    categorySlug: 'personal-care',
+    sku: 'PC004',
+    stock: 100,
+    weight: 0.25,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.3,
+    reviewCount: 76,
+    isFeatured: false,
+  },
+  {
+    name: 'Deodorant Spray 150ml',
+    slug: 'deodorant-spray-150ml',
+    description: '24-hour protection deodorant spray',
+    price: 100,
+    discountPrice: 85,
+    discount: 15,
+    categorySlug: 'personal-care',
+    sku: 'PC005',
+    stock: 95,
+    weight: 0.15,
+    images: ['https://images.unsplash.com/photo-1599599810694-b308ca884cb4?w=500'],
+    rating: 4.2,
+    reviewCount: 64,
+    isFeatured: false,
+  },
 ]
 
 async function main() {
@@ -539,7 +851,25 @@ async function main() {
     },
   })
 
-  console.log(`✅ Created 2 addresses`)
+  // Create admin address
+  const adminAddress = await prisma.address.create({
+    data: {
+      userId: adminUser.id,
+      type: 'HOME',
+      fullName: 'Admin User',
+      phone: '+91-9999999999',
+      email: 'admin@grocery.com',
+      addressLine1: '789 Admin Street',
+      addressLine2: 'Suite 100',
+      city: 'Delhi',
+      state: 'Delhi',
+      postalCode: '110001',
+      country: 'India',
+      isDefault: true,
+    },
+  })
+
+  console.log(`✅ Created 3 addresses`)
 
   // Create Sample Orders
   console.log('📦 Creating sample orders...')
@@ -547,7 +877,11 @@ async function main() {
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  for (let i = 0; i < 10; i++) {
+  const allUsers = [adminUser, customerUser, customerUser2]
+  const allAddresses = { [adminUser.id]: adminAddress, [customerUser.id]: address1, [customerUser2.id]: address2 }
+
+  for (let i = 0; i < 15; i++) {
+    const randomUser = allUsers[Math.floor(Math.random() * allUsers.length)]
     const randomProducts = productRecords
       .sort(() => Math.random() - 0.5)
       .slice(0, Math.floor(Math.random() * 3) + 1)
@@ -571,14 +905,14 @@ async function main() {
     await prisma.order.create({
       data: {
         orderNumber: `ORD-${Date.now()}-${i}`,
-        userId: i % 2 === 0 ? customerUser.id : customerUser2.id,
+        userId: randomUser.id,
         subtotal,
         shippingCharge,
         tax,
         discount: 0,
         total,
-        shippingAddressId: i % 2 === 0 ? address1.id : address2.id,
-        billingAddressId: i % 2 === 0 ? address1.id : address2.id,
+        shippingAddressId: allAddresses[randomUser.id].id,
+        billingAddressId: allAddresses[randomUser.id].id,
         paymentMethod: ['UPI', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH_ON_DELIVERY'][
           Math.floor(Math.random() * 4)
         ] as any,
@@ -605,15 +939,16 @@ async function main() {
     })
   }
 
-  console.log(`✅ Created 10 sample orders`)
+  console.log(`✅ Created 15 sample orders`)
 
   // Create Reviews
   console.log('⭐ Creating product reviews...')
+  const reviewUsers = [adminUser, customerUser, customerUser2]
   for (let i = 0; i < 15; i++) {
     const randomProduct =
       productRecords[Math.floor(Math.random() * productRecords.length)]
-    const randomUser = [customerUser, customerUser2][
-      Math.floor(Math.random() * 2)
+    const randomUser = reviewUsers[
+      Math.floor(Math.random() * reviewUsers.length)
     ]
 
     try {
@@ -635,14 +970,16 @@ async function main() {
 
   // Create Wishlist items
   console.log('❤️ Creating wishlist items...')
-  for (let i = 0; i < 5; i++) {
+  const wishlistUsers = [adminUser, customerUser, customerUser2]
+  for (let i = 0; i < 10; i++) {
+    const randomUser = wishlistUsers[Math.floor(Math.random() * wishlistUsers.length)]
     const randomProduct =
       productRecords[Math.floor(Math.random() * productRecords.length)]
 
     try {
       await prisma.wishlist.create({
         data: {
-          userId: customerUser.id,
+          userId: randomUser.id,
           productId: randomProduct.id,
         },
       })
@@ -655,19 +992,27 @@ async function main() {
 
   // Create Cart
   console.log('🛒 Creating shopping carts...')
-  const cart = await prisma.cart.create({
-    data: {
-      userId: customerUser.id,
-    },
-  })
+  for (const user of [adminUser, customerUser, customerUser2]) {
+    const cart = await prisma.cart.create({
+      data: {
+        userId: user.id,
+      },
+    })
 
-  await prisma.cartItem.create({
-    data: {
-      cartId: cart.id,
-      productId: productRecords[0].id,
-      quantity: 2,
-    },
-  })
+    const randomProducts = productRecords
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.floor(Math.random() * 2) + 1)
+
+    for (const product of randomProducts) {
+      await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId: product.id,
+          quantity: Math.floor(Math.random() * 3) + 1,
+        },
+      })
+    }
+  }
 
   console.log(`✅ Created shopping carts`)
 
