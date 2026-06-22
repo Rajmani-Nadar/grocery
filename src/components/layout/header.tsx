@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCart, useTheme, useWishlist } from '@/store'
 import { Button } from '@/components/ui/button'
+import { Tooltip } from '@/components/ui/tooltip'
 import {
   Search,
   ShoppingCart,
@@ -98,37 +99,42 @@ export function Header() {
           {/* Right Actions */}
           <div className="flex items-center gap-2">
             {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              title={isDark ? 'Light Mode' : 'Dark Mode'}
-            >
-              {isDark ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            <Tooltip content={isDark ? 'Light Mode' : 'Dark Mode'} position="bottom">
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                {isDark ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            </Tooltip>
 
             {/* Wishlist */}
-            <Link href="/wishlist">
-              <Button variant="ghost" size="icon" className="relative">
-                <Heart size={20} />
-                {mounted && wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {wishlistCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+            <Tooltip content="Wishlist" position="bottom">
+              <Link href="/wishlist">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Heart size={20} />
+                  {mounted && wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            </Tooltip>
 
             {/* Cart */}
-            <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart size={20} />
-                {mounted && itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-secondary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {itemCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+            <Tooltip content="Shopping Cart" position="bottom">
+              <Link href="/cart">
+                <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingCart size={20} />
+                  {mounted && itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-secondary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {itemCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            </Tooltip>
 
             {/* User Menu */}
             {session?.user ? (
@@ -139,20 +145,23 @@ export function Header() {
                     Dashboard
                   </Button>
                 </Link>
-                <Link href="/profile">
+                <Tooltip content="Profile Settings" position="bottom">
+                  <Link href="/profile">
+                    <button
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                      <Settings size={20} />
+                    </button>
+                  </Link>
+                </Tooltip>
+                <Tooltip content="Logout" position="bottom">
                   <button
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    title="Profile Settings"
+                    onClick={handleLogout}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-destructive"
                   >
-                    <Settings size={20} />
+                    <LogOut size={20} />
                   </button>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-destructive"
-                >
-                  <LogOut size={20} />
-                </button>
+                </Tooltip>
               </div>
             ) : (
               <Link href="/auth/login">

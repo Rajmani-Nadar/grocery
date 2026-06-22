@@ -7,12 +7,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     const slug = searchParams.get('slug')
+    const id = searchParams.get('id')
     const limit = parseInt(searchParams.get('limit') || '12')
     
-    // If slug is provided, return single product
-    if (slug) {
+    // If slug or id is provided, return single product
+    if (slug || id) {
       const product = await prisma.product.findFirst({
-        where: { slug, isActive: true },
+        where: slug 
+          ? { slug, isActive: true }
+          : { id, isActive: true },
         select: {
           id: true,
           name: true,

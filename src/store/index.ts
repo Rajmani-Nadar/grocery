@@ -4,18 +4,21 @@ import type { CartItem, Product } from '@/types'
 
 interface CartState {
   items: CartItem[]
+  userId: string | null
   addItem: (product: Product, quantity: number) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   getTotal: () => number
   getItemCount: () => number
+  setUserId: (userId: string | null) => void
 }
 
 export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      userId: null,
 
       addItem: (product: Product, quantity: number) => {
         set((state) => {
@@ -72,6 +75,16 @@ export const useCart = create<CartState>()(
       getItemCount: () => {
         return get().items.reduce((count, item) => count + item.quantity, 0)
       },
+
+      setUserId: (userId: string | null) => {
+        if (userId === null) {
+          // User logged out, clear cart
+          set({ items: [], userId: null })
+        } else {
+          // User logged in, keep cart but update userId
+          set({ userId })
+        }
+      },
     }),
     {
       name: 'grocery-cart',
@@ -82,16 +95,19 @@ export const useCart = create<CartState>()(
 
 interface WishlistState {
   items: string[] // productIds
+  userId: string | null
   addItem: (productId: string) => void
   removeItem: (productId: string) => void
   isInWishlist: (productId: string) => boolean
   clearWishlist: () => void
+  setUserId: (userId: string | null) => void
 }
 
 export const useWishlist = create<WishlistState>()(
   persist(
     (set, get) => ({
       items: [],
+      userId: null,
 
       addItem: (productId: string) => {
         set((state) => ({
@@ -113,6 +129,16 @@ export const useWishlist = create<WishlistState>()(
 
       clearWishlist: () => {
         set({ items: [] })
+      },
+
+      setUserId: (userId: string | null) => {
+        if (userId === null) {
+          // User logged out, clear wishlist
+          set({ items: [], userId: null })
+        } else {
+          // User logged in, keep wishlist but update userId
+          set({ userId })
+        }
       },
     }),
     {

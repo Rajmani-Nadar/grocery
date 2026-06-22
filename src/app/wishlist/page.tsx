@@ -43,7 +43,7 @@ export default function WishlistPage() {
       setLoading(true)
       try {
         const productPromises = wishlistItems.map((id) =>
-          fetch(`/api/products?slug=${id}`).then((r) => r.json())
+          fetch(`/api/products?id=${id}`).then((r) => r.json())
         )
         const results = await Promise.all(productPromises)
         setProducts(results.filter((p) => p && p.id))
