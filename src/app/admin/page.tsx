@@ -4,7 +4,8 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { BarChart3, ShoppingCart, DollarSign, Users, TrendingUp, Calendar } from 'lucide-react'
+import { BarChart3, ShoppingCart, DollarSign, Users, TrendingUp, Calendar, ArrowRight, Package } from 'lucide-react'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard',
@@ -225,7 +226,15 @@ export default async function AdminDashboardPage() {
 
         {/* Recent Orders */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-border">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Recent Orders</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Recent Orders</h2>
+            <Link href="/admin/orders">
+              <div className="flex items-center gap-2 text-primary hover:underline text-sm">
+                View All
+                <ArrowRight size={16} />
+              </div>
+            </Link>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -278,6 +287,37 @@ export default async function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Quick Management Links */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <Link href="/admin/products">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-600 p-3 rounded-lg">
+                  <Package className="text-white" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Manage Products</h3>
+                  <p className="text-sm text-muted-foreground">Add, edit, or delete products</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/orders">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="bg-green-600 p-3 rounded-lg">
+                  <ShoppingCart className="text-white" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Manage Orders</h3>
+                  <p className="text-sm text-muted-foreground">View and update orders</p>
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </main>

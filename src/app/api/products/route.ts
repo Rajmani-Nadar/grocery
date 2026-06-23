@@ -1,6 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
+
+// POST - Create new product
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    // Check if user is admin
+    if (!session || (session.user as any)?.role !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const {
+      name,
+      description,
+      price,
+      discountPrice,
+      discount,
+      stock,
+      sku,
+      weight,
+      categoryId,
+      images,
+      isFeatured,
+    } = body
+
+    // Validate required fields
+    if (!name || !price || !categoryId) {
+      return NextResponse.json(
+        { success: false, error: 'Name, price, and category are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if category exists
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: categoryId },
+    })
+
+    if (!categoryExists) {
+      return NextResponse.json(
+        { success: false, error: 'Category not found' },
+        { status: 404 }
+      )
+    }
+
+    // Generate slug from name
+    const slug = name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]/g, '')
+      .replace(/--+/g, '-')
+
+    // Create product
+    const product = await prisma.product.create({
+      data: {
+        name,
+        slug,
+        description,
+        price: parseFloat(price as string),
+        discountPrice: discountPrice ? parseFloat(discountPrice as string) : parseFloat(price as string),
+        discount: discount ? parseInt(discount as string) : 0,
+        stock: parseInt(stock as string),
+        sku,
+        weight: weight ? parseFloat(weight as string) : null,
+        categoryId,
+        images: images || [],
+        isFeatured: isFeatured || false,
+        isActive: true,
+      },
+      include: {
+        category: true,
+      },
+    })
+
+    return NextResponse.json(
+      { success: true, data: product, message: 'Product created successfully' },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Error creating product:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to create product' },
+      { status: 500 }
+    )
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,11 +103,42 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '12')
     
     // If slug or id is provided, return single product
-    if (slug || id) {
+    if (slug) {
       const product = await prisma.product.findFirst({
-        where: slug 
-          ? { slug, isActive: true }
-          : { id, isActive: true },
+        where: { slug, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          price: true,
+          discountPrice: true,
+          discount: true,
+          images: true,
+          rating: true,
+          reviewCount: true,
+          stock: true,
+          sku: true,
+          weight: true,
+          category: {
+            select: { id: true, name: true, slug: true },
+          },
+        },
+      })
+      
+      if (!product) {
+        return NextResponse.json(
+          { success: false, error: 'Product not found' },
+          { status: 404 }
+        )
+      }
+      
+      return NextResponse.json(product)
+    }
+
+    if (id && id !== '') {
+      const product = await prisma.product.findFirst({
+        where: { id, isActive: true },
         select: {
           id: true,
           name: true,
@@ -67,7 +190,7 @@ export async function GET(request: NextRequest) {
         ],
       }),
       ...(category && {
-        category: { slug: category },
+        categoryId: category,
       }),
       discountPrice: {
         gte: minPrice,

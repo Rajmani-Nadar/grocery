@@ -5,7 +5,55 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Phone, Mail, MapPin, Clock, Send } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, Clock, Send, ChevronDown } from 'lucide-react'
+
+const FAQItems = [
+  {
+    question: 'What are your delivery times?',
+    answer: 'We deliver within 24-48 hours of order placement in most areas.',
+  },
+  {
+    question: 'Do you accept returns?',
+    answer: 'Yes, we accept returns within 7 days if the product is unopened and in original condition.',
+  },
+  {
+    question: 'What payment methods do you accept?',
+    answer: 'We accept credit cards, debit cards, net banking, UPI, and digital wallets.',
+  },
+]
+
+function FAQAccordion() {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+
+  return (
+    <div className="space-y-3 text-sm">
+      {FAQItems.map((item, index) => (
+        <div key={index} className="border border-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <p className="font-medium text-foreground text-left flex items-center gap-2">
+              <span></span>
+              {item.question}
+            </p>
+            <ChevronDown
+              size={18}
+              className={`transition-transform flex-shrink-0 ${
+                expandedIndex === index ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {expandedIndex === index && (
+            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-border">
+              <p className="text-muted-foreground">{item.answer}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -190,20 +238,7 @@ export default function ContactPage() {
               {/* FAQ */}
               <div className="mt-8 pt-8 border-t border-border space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">Quick FAQs</h3>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="font-medium text-foreground">What are your delivery times?</p>
-                    <p className="text-muted-foreground">We deliver within 24-48 hours of order placement in most areas.</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Do you accept returns?</p>
-                    <p className="text-muted-foreground">Yes, we accept returns within 7 days if the product is unopened and in original condition.</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">What payment methods do you accept?</p>
-                    <p className="text-muted-foreground">We accept credit cards, debit cards, net banking, UPI, and digital wallets.</p>
-                  </div>
-                </div>
+                <FAQAccordion />
               </div>
             </Card>
           </div>

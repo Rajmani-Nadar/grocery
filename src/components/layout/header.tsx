@@ -35,9 +35,23 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true)
-    setItemCount(getItemCount())
-    setWishlistCount(wishlistItems.length)
-  }, [getItemCount, wishlistItems])
+  }, [])
+
+  useEffect(() => {
+    if (session?.user) {
+      setItemCount(getItemCount())
+    } else {
+      setItemCount(0)
+    }
+  }, [cartItems, getItemCount, session])
+
+  useEffect(() => {
+    if (session?.user) {
+      setWishlistCount(wishlistItems.length)
+    } else {
+      setWishlistCount(0)
+    }
+  }, [wishlistItems, session])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,10 +124,10 @@ export function Header() {
 
             {/* Wishlist */}
             <Tooltip content="Wishlist" position="bottom">
-              <Link href="/wishlist">
+              <Link href={session?.user ? '/wishlist' : '/auth/login'}>
                 <Button variant="ghost" size="icon" className="relative">
                   <Heart size={20} />
-                  {mounted && wishlistCount > 0 && (
+                  {mounted && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {wishlistCount}
                     </span>
@@ -124,10 +138,10 @@ export function Header() {
 
             {/* Cart */}
             <Tooltip content="Shopping Cart" position="bottom">
-              <Link href="/cart">
+              <Link href={session?.user ? '/cart' : '/auth/login'}>
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingCart size={20} />
-                  {mounted && itemCount > 0 && (
+                  {mounted && (
                     <span className="absolute -top-1 -right-1 bg-secondary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {itemCount}
                     </span>

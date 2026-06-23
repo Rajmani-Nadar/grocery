@@ -84,6 +84,7 @@ export interface Order {
   id: string
   orderNumber: string
   userId: string
+  user?: User
   items: OrderItem[]
   subtotal: number
   shippingCharge: number

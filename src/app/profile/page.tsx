@@ -105,18 +105,19 @@ export default function ProfilePage() {
   }
 
   const handleSaveAddress = async () => {
-    if (!newAddress.fullName || !newAddress.addressLine1 || !newAddress.city) {
+    if (!newAddress.fullName || !newAddress.phone || !newAddress.email || !newAddress.addressLine1 || !newAddress.city || !newAddress.state || !newAddress.postalCode) {
       setMessage({ type: 'error', text: 'Please fill in all required fields' })
       return
     }
 
     try {
       setIsSaving(true)
+      const isNewAddress = editingAddressId === 'new'
       const response = await fetch('/api/auth/address', {
-        method: editingAddressId ? 'PUT' : 'POST',
+        method: isNewAddress ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: editingAddressId,
+          ...(isNewAddress ? {} : { id: editingAddressId }),
           ...newAddress,
         }),
       })

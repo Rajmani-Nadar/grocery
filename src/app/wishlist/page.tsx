@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Heart, ShoppingCart, ArrowLeft, Trash2 } from 'lucide-react'
@@ -22,6 +24,8 @@ interface Product {
 }
 
 export default function WishlistPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const { items: wishlistItems, removeItem } = useWishlist()
   const { addItem } = useCart()
   const [mounted, setMounted] = useState(false)
@@ -31,6 +35,12 @@ export default function WishlistPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/login')
+    }
+  }, [status, router])
 
   // Fetch wishlist products
   useEffect(() => {
@@ -65,7 +75,11 @@ export default function WishlistPage() {
     removeItem(productId)
   }
 
-  if (!mounted) {
+  if (!mounted || status === 'loading') {
+    return null
+  }
+
+  if (!session) {
     return null
   }
 

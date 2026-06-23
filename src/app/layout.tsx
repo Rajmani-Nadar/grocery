@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   },
   description:
     'Shop fresh groceries online - fruits, vegetables, dairy, bakery, and more. Fast delivery, best prices, and premium quality guaranteed.',
+  icons: {
+    icon: '/favicon.svg',
+  },
   keywords: [
     'grocery store',
     'online grocery',

@@ -27,12 +27,20 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    // Validate required fields
+    if (!data.fullName || !data.phone || !data.addressLine1 || !data.city || !data.state || !data.postalCode) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
     const address = await prisma.address.create({
       data: {
         userId: user.id,
         fullName: data.fullName,
         phone: data.phone,
-        email: data.email,
+        email: data.email || session.user.email,
         addressLine1: data.addressLine1,
         addressLine2: data.addressLine2,
         city: data.city,

@@ -77,13 +77,8 @@ export const useCart = create<CartState>()(
       },
 
       setUserId: (userId: string | null) => {
-        if (userId === null) {
-          // User logged out, clear cart
-          set({ items: [], userId: null })
-        } else {
-          // User logged in, keep cart but update userId
-          set({ userId })
-        }
+        // Keep cart items across logins/logouts
+        set({ userId })
       },
     }),
     {
@@ -132,13 +127,8 @@ export const useWishlist = create<WishlistState>()(
       },
 
       setUserId: (userId: string | null) => {
-        if (userId === null) {
-          // User logged out, clear wishlist
-          set({ items: [], userId: null })
-        } else {
-          // User logged in, keep wishlist but update userId
-          set({ userId })
-        }
+        // Keep wishlist items across logins/logouts
+        set({ userId })
       },
     }),
     {
