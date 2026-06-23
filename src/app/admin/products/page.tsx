@@ -290,7 +290,7 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <p className="font-semibold text-foreground">₹{product.price}</p>
-                          {product.discountPrice < product.price && (
+                          {product.discountPrice && product.discountPrice < product.price && (
                             <p className="text-sm text-green-600">₹{product.discountPrice}</p>
                           )}
                         </td>
