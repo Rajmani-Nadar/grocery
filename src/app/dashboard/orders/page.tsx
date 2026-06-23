@@ -10,7 +10,7 @@ import Link from 'next/link'
 import type { Order } from '@/types'
 import toast from 'react-hot-toast'
 
-export default function OrdersPage() {
+function OrdersContent() {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -280,5 +280,21 @@ export default function OrdersPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+import { Suspense } from 'react'
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen py-12 bg-slate-50 dark:bg-slate-950">
+        <div className="container-custom flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </main>
+    }>
+      <OrdersContent />
+    </Suspense>
   )
 }

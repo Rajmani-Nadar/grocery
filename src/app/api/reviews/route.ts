@@ -159,9 +159,9 @@ export async function POST(request: NextRequest) {
     // Check if user already reviewed this product
     const existingReview = await prisma.review.findUnique({
       where: {
-        userId_productId: {
-          userId: user.id,
+        productId_userId: {
           productId,
+          userId: user.id,
         },
       },
     })

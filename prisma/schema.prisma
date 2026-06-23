@@ -273,7 +273,7 @@ model Review {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   rating    Int      // 1-5
-  title     String
+  title     String?
   comment   String?  @db.Text
   helpful   Int      @default(0)
   

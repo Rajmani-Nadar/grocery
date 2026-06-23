@@ -55,6 +55,7 @@ export function ProductForm({
     return {
       ...defaults,
       ...initialData,
+      description: initialData.description ?? '',
       price: initialData.price ?? 0,
       discountPrice: initialData.discountPrice ?? 0,
       discount: initialData.discount ?? 0,
