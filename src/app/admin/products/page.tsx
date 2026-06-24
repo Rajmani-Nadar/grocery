@@ -360,11 +360,14 @@ export default function AdminProductsPage() {
 
               {/* Pagination Controls */}
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-slate-50 dark:bg-slate-700/30">
+                <div className="px-6 py-4 border-t border-border bg-slate-50 dark:bg-slate-700/30 space-y-4 md:space-y-0">
+                  {/* Pagination Info - Visible on all screens */}
                   <div className="text-sm text-muted-foreground">
                     Showing {(currentPage - 1) * 12 + 1} to {Math.min(currentPage * 12, pagination.total)} of {pagination.total} products
                   </div>
-                  <div className="flex items-center gap-2">
+                  
+                  {/* Desktop Pagination - Show numbers + arrows */}
+                  <div className="hidden md:flex items-center justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -389,6 +392,31 @@ export default function AdminProductsPage() {
                         </Button>
                       ))}
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!pagination.hasNextPage || isLoading}
+                      className="gap-2"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Mobile Pagination - Only Previous/Next arrows */}
+                  <div className="md:hidden flex items-center justify-between gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!pagination.hasPrevPage || isLoading}
+                      className="gap-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium text-foreground">Page {currentPage} of {pagination.totalPages}</span>
                     <Button
                       variant="outline"
                       size="sm"
