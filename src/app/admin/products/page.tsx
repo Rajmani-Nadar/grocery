@@ -32,6 +32,7 @@ export default function AdminProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [selectedStock, setSelectedStock] = useState<string>('')
+  const [sort, setSort] = useState<string>('newest')
 
   useEffect(() => {
     if (status === 'loading') {
@@ -50,7 +51,7 @@ export default function AdminProductsPage() {
 
     fetchCategories()
     fetchProducts()
-  }, [status, session, router, currentPage, searchQuery, selectedCategory, selectedStatus, selectedStock])
+  }, [status, session, router, currentPage, searchQuery, selectedCategory, selectedStatus, selectedStock, sort])
 
   const fetchCategories = async () => {
     try {
@@ -72,6 +73,7 @@ export default function AdminProductsPage() {
         ...(selectedCategory && { category: selectedCategory }),
         ...(selectedStatus && { status: selectedStatus }),
         ...(selectedStock && { stock: selectedStock }),
+        sort,
       })
       const response = await fetch(`/api/admin/products?${params}`)
       const data = await response.json()
@@ -122,6 +124,7 @@ export default function AdminProductsPage() {
     setSelectedCategory('')
     setSelectedStatus('')
     setSelectedStock('')
+    setSort('newest')
     setCurrentPage(1)
   }
 
@@ -234,6 +237,29 @@ export default function AdminProductsPage() {
                 <option value="in-stock">In Stock (&gt; 10)</option>
                 <option value="low-stock">Low Stock (1-10)</option>
                 <option value="out-of-stock">Out of Stock</option>
+              </select>
+            </div>
+
+            {/* Sort Filter */}
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
+                Sort By
+              </label>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="rating">Highest Rated</option>
+                <option value="name-asc">Name: A to Z</option>
+                <option value="name-desc">Name: Z to A</option>
               </select>
             </div>
 

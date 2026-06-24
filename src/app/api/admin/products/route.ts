@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || ''
     const status = searchParams.get('status') || '' // 'active', 'inactive', or '' for all
     const stock = searchParams.get('stock') || '' // 'in-stock', 'low-stock', 'out-of-stock'
+    const sort = searchParams.get('sort') || 'newest'
 
     const skip = (page - 1) * pageSize
 
@@ -45,6 +46,31 @@ export async function GET(request: NextRequest) {
       ...(stock === 'in-stock' && { stock: { gt: 10 } }),
       ...(stock === 'low-stock' && { stock: { gt: 0, lte: 10 } }),
       ...(stock === 'out-of-stock' && { stock: { equals: 0 } }),
+    }
+
+    // Build orderBy clause
+    let orderBy: any = { createdAt: 'desc' }
+    switch (sort) {
+      case 'oldest':
+        orderBy = { createdAt: 'asc' }
+        break
+      case 'price-low':
+        orderBy = { price: 'asc' }
+        break
+      case 'price-high':
+        orderBy = { price: 'desc' }
+        break
+      case 'rating':
+        orderBy = { rating: 'desc' }
+        break
+      case 'name-asc':
+        orderBy = { name: 'asc' }
+        break
+      case 'name-desc':
+        orderBy = { name: 'desc' }
+        break
+      default:
+        orderBy = { createdAt: 'desc' }
     }
 
     // Fetch products and total count
@@ -69,7 +95,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: pageSize,
       }),
