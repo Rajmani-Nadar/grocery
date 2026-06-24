@@ -39,6 +39,8 @@ export interface Product {
   reviewCount: number
   isFeatured: boolean
   isActive: boolean
+  createdAt?: string | Date
+  updatedAt?: string | Date
 }
 
 export interface CartItem {

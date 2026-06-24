@@ -290,6 +290,7 @@ export default function AdminProductsPage() {
                       <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Price</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Stock</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Date Uploaded</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
@@ -339,6 +340,9 @@ export default function AdminProductsPage() {
                               Inactive
                             </span>
                           )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          {product.createdAt ? new Date(product.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                         </td>
                         <td className="px-6 py-4 text-right space-x-2">
                           <Link href={`/admin/products/${product.id}/edit`}>
