@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Upload, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface ProductFormProps {
   initialData?: {
@@ -65,6 +66,8 @@ export function ProductForm({
     }
   })
   const [imageUrl, setImageUrl] = React.useState('')
+  const [isUploadingImage, setIsUploadingImage] = React.useState(false)
+  const [uploadProgress, setUploadProgress] = React.useState(0)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -99,6 +102,69 @@ export function ProductForm({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }))
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files
+    if (!files) return
+
+    const file = files[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file')
+      return
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB')
+      return
+    }
+
+    try {
+      setIsUploadingImage(true)
+      setUploadProgress(0)
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      setUploadProgress(100)
+
+      if (!response.ok) {
+        const error = await response.json()
+        if (error.instructions) {
+          toast.error(error.error)
+          toast.error(error.instructions)
+        } else {
+          toast.error(error.error || 'Failed to upload image')
+        }
+        return
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.data.url) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, data.data.url],
+        }))
+        toast.success('Image uploaded successfully!')
+        e.currentTarget.value = ''
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('Error uploading image. Make sure Cloudinary is configured.')
+    } finally {
+      setIsUploadingImage(false)
+      setUploadProgress(0)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,42 +319,85 @@ export function ProductForm({
       {/* Images */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">Product Images</label>
-        <div className="flex gap-2 mb-4">
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="Enter image URL"
-            className="flex-1 px-4 py-2 border border-border rounded-lg bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <Button
-            type="button"
-            onClick={handleAddImage}
-            disabled={!imageUrl.trim()}
-            variant="outline"
-          >
-            Add Image
-          </Button>
+        <div className="space-y-4">
+          {/* URL Input */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Add Image from URL</p>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="Enter image URL"
+                className="flex-1 px-4 py-2 border border-border rounded-lg bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <Button
+                type="button"
+                onClick={handleAddImage}
+                disabled={!imageUrl.trim()}
+                variant="outline"
+              >
+                Add URL
+              </Button>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Or Upload from Computer</p>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={isUploadingImage}
+                className="hidden"
+                id="image-file-input"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={isUploadingImage}
+                onClick={() => document.getElementById('image-file-input')?.click()}
+              >
+                {isUploadingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading... {uploadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Upload Image
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {formData.images.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {formData.images.map((img, idx) => (
-              <div key={idx} className="relative group">
-                <img
-                  src={img}
-                  alt={`Product ${idx + 1}`}
-                  className="w-full h-24 object-cover rounded-lg border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(idx)}
-                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+          <div className="mt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-3">Uploaded Images ({formData.images.length})</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {formData.images.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <img
+                    src={img}
+                    alt={`Product ${idx + 1}`}
+                    className="w-full h-24 object-cover rounded-lg border border-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
