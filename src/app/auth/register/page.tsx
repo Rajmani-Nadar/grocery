@@ -20,6 +20,7 @@ export default function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -38,6 +39,12 @@ export default function RegisterPage() {
     // Validation
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('All fields are required')
+      setIsLoading(false)
+      return
+    }
+
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service')
       setIsLoading(false)
       return
     }
@@ -207,17 +214,27 @@ export default function RegisterPage() {
 
               {/* Terms */}
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded" required />
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                />
                 <span>
                   I agree to the{' '}
-                  <Link href="#" className="text-primary-600 hover:underline">
+                  <Link href="/terms" className="text-primary-600 hover:underline">
                     Terms of Service
                   </Link>
                 </span>
               </label>
 
               {/* Submit Button */}
-              <Button type="submit" className="w-full" isLoading={isLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                isLoading={isLoading}
+                disabled={!agreedToTerms || isLoading}
+              >
                 Create Account
               </Button>
             </form>

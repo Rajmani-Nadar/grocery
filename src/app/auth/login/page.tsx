@@ -117,17 +117,6 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
-              <p className="font-semibold mb-2 text-blue-900 dark:text-blue-300">Demo Credentials:</p>
-              <p className="text-blue-800 dark:text-blue-400 mb-1">
-                Email: <code className="bg-white/50 px-1 rounded">customer@grocery.com</code>
-              </p>
-              <p className="text-blue-800 dark:text-blue-400">
-                Password: <code className="bg-white/50 px-1 rounded">Password@123</code>
-              </p>
-            </div>
-
             {/* Sign Up Link */}
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
