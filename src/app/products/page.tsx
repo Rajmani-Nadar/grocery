@@ -12,12 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { useCart, useWishlist } from '@/store'
 import { Heart, ShoppingCart, Star, X } from 'lucide-react'
 import { formatCurrency } from '@/utils'
-import type { Product } from '@/types'
-
-interface Category {
-  id: string
-  name: string
-}
+import type { Product, Category } from '@/types'
 
 export default function ProductsPage() {
   const searchParams = useSearchParams()
@@ -131,8 +126,8 @@ export default function ProductsPage() {
                       <input
                         type="radio"
                         name="category"
-                        value={cat.id}
-                        checked={category === cat.id}
+                        value={cat.slug}
+                        checked={category === cat.slug}
                         onChange={(e) => {
                           setCategory(e.target.value)
                           setPage(1)

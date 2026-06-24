@@ -180,6 +180,16 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * pageSize
 
+    // If category is provided, convert slug to categoryId
+    let categoryId: string | undefined
+    if (category) {
+      const categoryRecord = await prisma.category.findFirst({
+        where: { slug: category },
+        select: { id: true },
+      })
+      categoryId = categoryRecord?.id
+    }
+
     // Build where clause
     const where: Prisma.ProductWhereInput = {
       isActive: true,
@@ -189,8 +199,8 @@ export async function GET(request: NextRequest) {
           { description: { contains: search, mode: 'insensitive' } },
         ],
       }),
-      ...(category && {
-        categoryId: category,
+      ...(categoryId && {
+        categoryId,
       }),
       discountPrice: {
         gte: minPrice,
