@@ -1,0 +1,8 @@
+{
+  "buildCommand": "next build",
+  "installCommand": "npm install",
+  "env": {
+    "PRISMA_SKIP_ENGINE_CHECK": "@PRISMA_SKIP_ENGINE_CHECK"
+  },
+  "envPrefix": "DATABASE_URL,NEXTAUTH_"
+}
