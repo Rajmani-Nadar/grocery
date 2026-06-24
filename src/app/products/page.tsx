@@ -52,7 +52,7 @@ export default function ProductsPage() {
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist()
 
   const { data: response, isLoading } = useQuery({
-    queryKey: ['products', page, category, search],
+    queryKey: ['products', page, category, search, minPrice, maxPrice, sort],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -155,8 +155,11 @@ export default function ProductsPage() {
                       value={minPrice}
                       onChange={(e) => {
                         const val = parseInt(e.target.value)
-                        setMinPrice(val)
-                        setPage(1)
+                        // Ensure minPrice doesn't exceed maxPrice
+                        if (val <= maxPrice) {
+                          setMinPrice(val)
+                          setPage(1)
+                        }
                       }}
                       className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                     />
@@ -170,11 +173,17 @@ export default function ProductsPage() {
                       value={maxPrice}
                       onChange={(e) => {
                         const val = parseInt(e.target.value)
-                        setMaxPrice(val)
-                        setPage(1)
+                        // Ensure maxPrice is at least minPrice
+                        if (val >= minPrice) {
+                          setMaxPrice(val)
+                          setPage(1)
+                        }
                       }}
                       className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                     />
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-slate-100 dark:bg-slate-700 p-2 rounded">
+                    Selected Range: ₹{minPrice} - ₹{maxPrice}
                   </div>
                 </div>
               </div>
