@@ -208,18 +208,21 @@ export function Header() {
             <nav className="space-y-2">
               <Link
                 href="/products"
+                onClick={() => setIsMenuOpen(false)}
                 className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
                 Products
               </Link>
               <Link
                 href="/about"
+                onClick={() => setIsMenuOpen(false)}
                 className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
                 About
               </Link>
               <Link
                 href="/contact"
+                onClick={() => setIsMenuOpen(false)}
                 className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
                 Contact
@@ -228,14 +231,14 @@ export function Header() {
 
             {/* Mobile Actions */}
             <div className="space-y-2 border-t border-border pt-3">
-              <Link href="/wishlist" className="block">
+              <Link href="/wishlist" onClick={() => setIsMenuOpen(false)} className="block">
                 <Button className="w-full" variant="outline">
                   <Heart size={18} className="mr-2" />
                   Wishlist ({wishlistCount})
                 </Button>
               </Link>
 
-              <Link href="/cart" className="block">
+              <Link href="/cart" onClick={() => setIsMenuOpen(false)} className="block">
                 <Button className="w-full" variant="outline">
                   <ShoppingCart size={18} className="mr-2" />
                   Cart ({getItemCount()})
@@ -244,12 +247,12 @@ export function Header() {
 
               {session?.user ? (
                 <>
-                  <Link href="/dashboard" className="block">
+                  <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="block">
                     <Button className="w-full" variant="outline">
                       Dashboard
                     </Button>
                   </Link>
-                  <Link href="/profile" className="block">
+                  <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="block">
                     <Button className="w-full" variant="outline">
                       <Settings size={18} className="mr-2" />
                       Profile
@@ -258,13 +261,16 @@ export function Header() {
                   <Button
                     className="w-full"
                     variant="destructive"
-                    onClick={handleLogout}
+                    onClick={() => {
+                      setIsMenuOpen(false)
+                      handleLogout()
+                    }}
                   >
                     Logout
                   </Button>
                 </>
               ) : (
-                <Link href="/auth/login" className="block">
+                <Link href="/auth/login" onClick={() => setIsMenuOpen(false)} className="block">
                   <Button className="w-full">Login</Button>
                 </Link>
               )}
