@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`
+    const resetUrl = `${process.env.NEXTAUTH_URL || 'https://rajmani-grocery.vercel.app'}/auth/reset-password?token=${resetToken}`
 
     // Send password reset email
     try {

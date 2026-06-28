@@ -129,6 +129,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
 }
 
 export async function sendWelcomeEmail(name: string, email: string) {
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://rajmani-grocery.vercel.app'
   const html = `
     <!DOCTYPE html>
     <html>
@@ -158,7 +159,7 @@ export async function sendWelcomeEmail(name: string, email: string) {
           </ul>
 
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.NEXTAUTH_URL}" style="background-color: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
+            <a href="${baseUrl}" style="background-color: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
               Start Shopping Now
             </a>
           </div>
