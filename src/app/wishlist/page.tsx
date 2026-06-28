@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -69,10 +70,12 @@ export default function WishlistPage() {
 
   const handleAddToCart = (product: Product) => {
     addItem(product as any, 1)
+    toast.success('Product added to cart')
   }
 
   const handleRemoveFromWishlist = (productId: string) => {
     removeItem(productId)
+    toast('Removed from wishlist')
   }
 
   if (!mounted || status === 'loading') {

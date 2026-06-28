@@ -40,6 +40,9 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   const [newAddress, setNewAddress] = useState<Partial<Address>>({})
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   useEffect(() => {
     if (!session?.user?.email) {
@@ -78,20 +81,42 @@ export default function ProfilePage() {
 
     try {
       setIsSaving(true)
+      const payload: any = {
+        name: profile.name,
+        phone: profile.phone,
+      }
+
+      if (currentPassword || newPassword || confirmPassword) {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+          setMessage({ type: 'error', text: 'Fill all password fields to change password' })
+          return
+        }
+        if (newPassword !== confirmPassword) {
+          setMessage({ type: 'error', text: 'New passwords do not match' })
+          return
+        }
+        payload.currentPassword = currentPassword
+        payload.newPassword = newPassword
+      }
+
       const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: profile.name,
-          phone: profile.phone,
-        }),
+        body: JSON.stringify(payload),
       })
 
-      if (!response.ok) throw new Error('Failed to update profile')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update profile')
+      }
+
       setMessage({ type: 'success', text: 'Profile updated successfully!' })
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to update profile' })
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update profile' })
     } finally {
       setIsSaving(false)
     }
@@ -251,6 +276,42 @@ export default function ProfilePage() {
                   <Save size={18} className="mr-2" />
                   {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Change Password</CardTitle>
+                <CardDescription>Update your password securely.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Current Password</label>
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Current password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">New Password</label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Confirm New Password</label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                  />
+                </div>
               </CardContent>
             </Card>
 

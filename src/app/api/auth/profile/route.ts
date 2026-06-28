@@ -56,14 +56,44 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { name, phone } = await request.json()
+    const { name, phone, currentPassword, newPassword } = await request.json()
+
+    const updateData: any = {
+      name: name || undefined,
+      phone: phone || undefined,
+    }
+
+    if (currentPassword || newPassword) {
+      if (!currentPassword || !newPassword) {
+        return NextResponse.json(
+          { success: false, error: 'Current password and new password are required' },
+          { status: 400 }
+        )
+      }
+
+      const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+      if (!user || !user.password) {
+        return NextResponse.json(
+          { success: false, error: 'User password not available' },
+          { status: 400 }
+        )
+      }
+
+      const isPasswordValid = await import('bcryptjs').then((bcrypt) => bcrypt.compare(currentPassword, user.password!))
+      if (!isPasswordValid) {
+        return NextResponse.json(
+          { success: false, error: 'Current password is incorrect' },
+          { status: 400 }
+        )
+      }
+
+      const passwordHash = await import('bcryptjs').then((bcrypt) => bcrypt.hash(newPassword, 10))
+      updateData.password = passwordHash
+    }
 
     const user = await prisma.user.update({
       where: { email: session.user.email },
-      data: {
-        name: name || undefined,
-        phone: phone || undefined,
-      },
+      data: updateData,
       include: {
         addresses: {
           orderBy: { isDefault: 'desc' },

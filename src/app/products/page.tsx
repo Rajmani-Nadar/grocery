@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -76,14 +77,17 @@ export default function ProductsPage() {
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault()
     addItem(product, 1)
+    toast.success('Product added to cart')
   }
 
   const handleWishlist = (productId: string, e: React.MouseEvent) => {
     e.preventDefault()
     if (isInWishlist(productId)) {
       removeFromWishlist(productId)
+      toast('Removed from wishlist')
     } else {
       addToWishlist(productId)
+      toast.success('Added to wishlist')
     }
   }
 

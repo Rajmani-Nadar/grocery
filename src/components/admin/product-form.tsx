@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Upload, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+type NumericField = number | ''
+
 interface ProductFormProps {
   initialData?: {
     id?: string
@@ -25,6 +27,21 @@ interface ProductFormProps {
   submitButtonLabel?: string
 }
 
+type ProductFormState = {
+  name: string
+  description: string
+  price: NumericField
+  discountPrice: NumericField
+  discount: NumericField
+  stock: NumericField
+  sku: string
+  weight: NumericField
+  categoryId: string
+  images: string[]
+  isFeatured: boolean
+  isActive: boolean
+}
+
 export function ProductForm({
   initialData,
   categories,
@@ -32,16 +49,16 @@ export function ProductForm({
   isLoading,
   submitButtonLabel = 'Create Product',
 }: ProductFormProps) {
-  const [formData, setFormData] = React.useState(() => {
-    const defaults = {
+  const [formData, setFormData] = React.useState<ProductFormState>(() => {
+    const defaults: ProductFormState = {
       name: '',
       description: '',
-      price: 0,
-      discountPrice: 0,
-      discount: 0,
-      stock: 0,
+      price: '',
+      discountPrice: '',
+      discount: '',
+      stock: '',
       sku: '',
-      weight: 0,
+      weight: '',
       categoryId: '',
       images: [],
       isFeatured: false,
@@ -52,16 +69,16 @@ export function ProductForm({
       return defaults
     }
     
-    // Merge initialData with defaults, converting null/undefined numeric fields to 0
+    // Merge initialData with defaults, converting null/undefined numeric fields to '' for editing
     return {
       ...defaults,
       ...initialData,
       description: initialData.description ?? '',
-      price: initialData.price ?? 0,
-      discountPrice: initialData.discountPrice ?? 0,
-      discount: initialData.discount ?? 0,
-      stock: initialData.stock ?? 0,
-      weight: initialData.weight ?? 0,
+      price: initialData.price ?? '',
+      discountPrice: initialData.discountPrice ?? '',
+      discount: initialData.discount ?? '',
+      stock: initialData.stock ?? '',
+      weight: initialData.weight ?? '',
       images: initialData.images ?? [],
     }
   })
@@ -74,11 +91,16 @@ export function ProductForm({
     const checked = (e.target as HTMLInputElement).checked
 
     let finalValue: any = value
-    
+
     if (type === 'checkbox') {
       finalValue = checked
     } else if (type === 'number') {
-      finalValue = value === '' ? 0 : parseFloat(value)
+      if (value === '') {
+        finalValue = ''
+      } else {
+        const parsedValue = parseFloat(value)
+        finalValue = isNaN(parsedValue) ? '' : Math.max(parsedValue, 0)
+      }
     }
 
     setFormData((prev) => ({
@@ -105,7 +127,8 @@ export function ProductForm({
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.currentTarget.files
+    const input = e.currentTarget
+    const files = input.files
     if (!files) return
 
     const file = files[0]
@@ -135,51 +158,65 @@ export function ProductForm({
         body: formData,
       })
 
+      const data = await response.json()
       setUploadProgress(100)
 
-      if (!response.ok) {
-        const error = await response.json()
-        if (error.instructions) {
-          toast.error(error.error)
-          toast.error(error.instructions)
-        } else {
-          toast.error(error.error || 'Failed to upload image')
+      if (!response.ok || !data.success || !data.data?.url) {
+        const errorMessage = data?.error || 'Failed to upload image'
+        toast.error(errorMessage)
+        if (data?.instructions) {
+          toast.error(data.instructions)
         }
+        input.value = ''
         return
       }
 
-      const data = await response.json()
-      
-      if (data.success && data.data.url) {
-        setFormData((prev) => ({
-          ...prev,
-          images: [...prev.images, data.data.url],
-        }))
-        toast.success('Image uploaded successfully!')
-        e.currentTarget.value = ''
-      }
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, data.data.url],
+      }))
+      toast.success('Image uploaded successfully!')
+      input.value = ''
     } catch (error) {
       console.error('Upload error:', error)
       toast.error('Error uploading image. Make sure Cloudinary is configured.')
+      input.value = ''
     } finally {
       setIsUploadingImage(false)
       setUploadProgress(0)
     }
   }
 
+  const isFormValid =
+    formData.name.trim().length > 0 &&
+    formData.sku.trim().length > 0 &&
+    formData.categoryId.trim().length > 0 &&
+    formData.price !== '' &&
+    Number(formData.price) > 0 &&
+    formData.stock !== '' &&
+    Number(formData.stock) >= 0
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isFormValid) {
+      return
+    }
     await onSubmit(formData)
   }
 
   React.useEffect(() => {
-    if (formData.price > 0 && formData.discountPrice > 0) {
-      const discount = Math.round(((formData.price - formData.discountPrice) / formData.price) * 100)
-      if (discount !== formData.discount && !isNaN(discount)) {
-        setFormData((prev) => ({ ...prev, discount }))
+    if (formData.price !== '' && formData.discountPrice !== '') {
+      const price = Number(formData.price)
+      const discountPrice = Number(formData.discountPrice)
+
+      if (price > 0 && discountPrice > 0) {
+        const discount = Math.round(((price - discountPrice) / price) * 100)
+        if (discount !== Number(formData.discount) && !isNaN(discount)) {
+          setFormData((prev) => ({ ...prev, discount }))
+        }
       }
     }
-  }, [formData.price, formData.discountPrice])
+  }, [formData.price, formData.discountPrice, formData.discount])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -236,9 +273,12 @@ export function ProductForm({
           <input
             type="number"
             name="price"
-            value={formData.price}
+            value={formData.price === '' ? '' : formData.price}
             onChange={handleChange}
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
             placeholder="0"
+            min="0"
             step="0.01"
             required
             className="w-full px-4 py-2 border border-border rounded-lg bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -282,7 +322,10 @@ export function ProductForm({
             name="stock"
             value={formData.stock}
             onChange={handleChange}
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
             placeholder="0"
+            min="0"
             required
             className="w-full px-4 py-2 border border-border rounded-lg bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
@@ -294,9 +337,12 @@ export function ProductForm({
           <input
             type="number"
             name="weight"
-            value={formData.weight || 0}
+            value={formData.weight === '' ? '' : formData.weight}
             onChange={handleChange}
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
             placeholder="0"
+            min="0"
             step="0.1"
             className="w-full px-4 py-2 border border-border rounded-lg bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
@@ -344,7 +390,7 @@ export function ProductForm({
 
           {/* File Upload */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">Or Upload from Computer</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Mobile Or Upload from Computer</p>
             <div className="relative">
               <input
                 type="file"
@@ -429,7 +475,7 @@ export function ProductForm({
 
       {/* Submit Button */}
       <div className="flex gap-4">
-        <Button type="submit" disabled={isLoading} className="gap-2">
+        <Button type="submit" disabled={isLoading || !isFormValid} className="gap-2">
           {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
           {submitButtonLabel}
         </Button>

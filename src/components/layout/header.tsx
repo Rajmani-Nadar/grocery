@@ -62,7 +62,17 @@ export function Header() {
   }
 
   const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/' })
+    try {
+      await signOut({ 
+        redirect: false,
+        callbackUrl: '/' 
+      })
+      router.push('/')
+    } catch (error) {
+      console.error('[LOGOUT] Error signing out:', error)
+      // Still redirect even if there's an error
+      router.push('/')
+    }
   }
 
   return (
@@ -73,12 +83,39 @@ export function Header() {
           <Link href="/" className="text-2xl font-bold text-primary-600">
             🛒 Grocery
           </Link>
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Wishlist (mobile) */}
+            <Link href={session?.user ? '/wishlist' : '/auth/login'}>
+              <Button variant="ghost" size="icon" className="relative p-2">
+                <Heart size={20} />
+                {mounted && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+            {/* Cart (mobile) */}
+            <Link href={session?.user ? '/cart' : '/auth/login'}>
+              <Button variant="ghost" size="icon" className="relative p-2">
+                <ShoppingCart size={20} />
+                {mounted && (
+                  <span className="absolute -top-1 -right-1 bg-secondary-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Desktop Header */}
@@ -87,6 +124,22 @@ export function Header() {
           <Link href="/" className="text-2xl font-bold text-primary-600 flex-shrink-0">
             🛒 Grocery
           </Link>
+
+          {/* Main navigation */}
+          <nav className="hidden lg:flex items-center gap-3">
+            <Link
+              href="/about"
+              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/contact"
+              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              Contact
+            </Link>
+          </nav>
 
           {/* Search Bar */}
           <form

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import toast from 'react-hot-toast'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
@@ -48,14 +49,17 @@ export function FeaturedProducts() {
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault()
     addItem(product, 1)
+    toast.success('Product added to cart')
   }
 
   const handleWishlist = (productId: string, e: React.MouseEvent) => {
     e.preventDefault()
     if (isInWishlist(productId)) {
       removeFromWishlist(productId)
+      toast('Removed from wishlist')
     } else {
       addToWishlist(productId)
+      toast.success('Added to wishlist')
     }
   }
 
