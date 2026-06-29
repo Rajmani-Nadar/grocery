@@ -159,7 +159,7 @@ Create:
 POST /api/payments/razorpay/verify
 
 Requirements:
-- Verify Razorpay signature.
+- Verify Stripe signature.
 - Update payment status.
 - Update order status.
 - Handle invalid signatures.
@@ -174,7 +174,7 @@ Stop after completion.
 
 
 Prompt 5
-Implement ONLY Razorpay webhook handling.
+Implement ONLY Stripe webhook handling.
 
 Create:
 

@@ -1,4 +1,4 @@
-# Razorpay Integration Plan
+# Stripe Integration Plan
 
 ## Current Checkout Flow
 
@@ -19,29 +19,29 @@ The current checkout flow is a simple client-driven order creation flow:
 
 Important limitation: there is no real payment gateway integration today. The checkout flow currently creates an order as if payment were already completed, which is not suitable for production commerce.
 
-## Proposed Razorpay Flow
+## Proposed Stripe Flow
 
-Razorpay should be introduced as the actual payment gateway between order creation and order fulfillment.
+Stripe should be introduced as the actual payment gateway between order creation and order fulfillment.
 
 Recommended lifecycle:
 
 1. Customer reaches checkout and selects an address.
-2. The browser submits the checkout payload to a new server endpoint that creates a pending order and a Razorpay order intent.
+2. The browser submits the checkout payload to a new server endpoint that creates a pending order and a Stripe order intent.
 3. The server creates a DB record for the order in a pending/payment-pending state.
-4. The server calls Razorpay Orders API to create a Razorpay order with:
+4. The server calls Stripe Orders API to create a Stripe order with:
    - amount
    - currency
    - receipt / order id
    - payment capture mode
-5. The server returns the Razorpay order id, key id, and amount to the browser.
-6. The browser opens the Razorpay Checkout widget using the public key and the order id.
-7. The customer completes the payment on Razorpay.
-8. Razorpay sends the payment result back to the browser.
-9. The browser calls a server-side verification endpoint with the Razorpay payment id, order id, and signature.
-10. The server verifies the signature using the Razorpay secret.
+5. The server returns the Stripe order id, key id, and amount to the browser.
+6. The browser opens the Stripe Checkout widget using the public key and the order id.
+7. The customer completes the payment on Stripe.
+8. Stripe sends the payment result back to the browser.
+9. The browser calls a server-side verification endpoint with the Stripe payment id, order id, and signature.
+10. The server verifies the signature using the Stripe secret.
 11. If verification succeeds, the server updates the order and payment status in the database and marks the order as paid.
 12. The server redirects the user to the success page.
-13. Razorpay sends a webhook event for payment status updates, and the server reconciles the payment state from the webhook as the source of truth.
+13. Stripe sends a webhook event for payment status updates, and the server reconciles the payment state from the webhook as the source of truth.
 
 This flow ensures that payment is verified server-side before the order is treated as completed.
 
@@ -53,16 +53,16 @@ The existing Prisma schema already has the foundations for orders, addresses, an
 Add the following fields to the Order model:
 
 - razorpayOrderId: String?  
-  Stores the Razorpay order id generated for the payment intent.
+  Stores the Stripe order id generated for the payment intent.
 
 - razorpayPaymentId: String?  
-  Stores the Razorpay payment id after successful payment.
+  Stores the Stripe payment id after successful payment.
 
 - razorpaySignature: String?  
-  Stores the signature returned by Razorpay for verification auditing.
+  Stores the signature returned by Stripe for verification auditing.
 
 - paymentAmount: Float?  
-  Stores the amount captured by Razorpay.
+  Stores the amount captured by Stripe.
 
 - currency: String?  
   Stores the payment currency, typically INR.
@@ -137,19 +137,19 @@ Purpose:
 - Validate the authenticated user
 - Validate the checkout payload
 - Create or prepare the order in the database
-- Generate a Razorpay order intent
-- Return the Razorpay order id and public key to the browser
+- Generate a Stripe order intent
+- Return the Stripe order id and public key to the browser
 
 ### 2. POST /api/payments/razorpay/verify
 Purpose:
-- Receive Razorpay payment response data from the browser
+- Receive Stripe payment response data from the browser
 - Verify the signature server-side
 - Update the order and payment status in the database
 - Return success or failure to the client
 
 ### 3. POST /api/payments/razorpay/webhook
 Purpose:
-- Receive Razorpay webhook events
+- Receive Stripe webhook events
 - Verify webhook signature
 - Update payment state and order state from the event
 - Prevent duplicate processing using idempotency logic
@@ -163,7 +163,7 @@ Purpose:
 Signature verification is the most important server-side step.
 
 ### How it works
-Razorpay sends a signature for the payment response. The server must verify it before treating the payment as successful.
+Stripe sends a signature for the payment response. The server must verify it before treating the payment as successful.
 
 The verification string is built as:
 
@@ -171,15 +171,15 @@ The verification string is built as:
 
 The server computes:
 
-- HMAC SHA256 of the concatenated string using the Razorpay secret
+- HMAC SHA256 of the concatenated string using the Stripe secret
 
-Then it compares the computed digest to the signature provided by Razorpay.
+Then it compares the computed digest to the signature provided by Stripe.
 
 ### Recommended implementation logic
 1. Receive order id, payment id, and signature from the browser.
 2. Retrieve the corresponding order from the database.
-3. Confirm the order has a stored Razorpay order id matching the request.
-4. Compute the expected signature using the Razorpay secret.
+3. Confirm the order has a stored Stripe order id matching the request.
+4. Compute the expected signature using the Stripe secret.
 5. If the signature matches, mark the payment as captured/verified.
 6. If it does not match, mark the payment as failed or tampered.
 
@@ -200,7 +200,7 @@ Webhook handling should be treated as the authoritative reconciliation layer.
 - order.paid
 
 ### Flow
-1. Razorpay sends a webhook to /api/payments/razorpay/webhook.
+1. Stripe sends a webhook to /api/payments/razorpay/webhook.
 2. The server validates the webhook signature using the webhook secret.
 3. The server reads the event payload and extracts the payment/order identifiers.
 4. The server checks whether the payment has already been processed by looking up the payment id or event id.
@@ -220,20 +220,20 @@ The browser callback can be interrupted or spoofed, but the webhook is the relia
 The payment flow should handle the following cases explicitly.
 
 ### 1. Failed payment
-If the customer cancels or Razorpay reports a failure:
+If the customer cancels or Stripe reports a failure:
 - mark the payment status as FAILED
 - keep the order in a non-paid state, such as CANCELLED or PAYMENT_FAILED
 - allow the customer to retry checkout
 - show a clear error message on the success/failure page
 
 ### 2. Cancelled payment
-If the customer closes the Razorpay Checkout modal:
+If the customer closes the Stripe Checkout modal:
 - do not mark the order as paid
 - keep the order in a pending or cancelled state
 - allow them to retry without creating duplicate orders if the original order is still pending
 
 ### 3. Duplicate payment events
-If Razorpay sends the same event more than once:
+If Stripe sends the same event more than once:
 - use idempotency checks based on payment id or webhook event id
 - ignore duplicates instead of double-updating the database
 
@@ -254,13 +254,13 @@ If the signature is invalid or the order cannot be found:
 The following environment variables should be added.
 
 - RAZORPAY_KEY_ID
-  Public key used by the browser to initialize Razorpay.
+  Public key used by the browser to initialize Stripe.
 
 - RAZORPAY_KEY_SECRET
   Secret key used server-side for creating orders and verifying signatures.
 
 - RAZORPAY_WEBHOOK_SECRET
-  Secret used to verify incoming Razorpay webhook requests.
+  Secret used to verify incoming Stripe webhook requests.
 
 - NEXT_PUBLIC_RAZORPAY_KEY_ID
   Public key exposed to the browser if the app uses a separate client-side env pattern.
@@ -278,10 +278,10 @@ The following environment variables should be added.
 
 Payment integrations need extra hardening.
 
-- Never expose the Razorpay secret key to the browser.
+- Never expose the Stripe secret key to the browser.
 - Verify all signatures on the server.
 - Use HTTPS for all payment-related routes.
-- Validate the order amount and currency before creating the Razorpay order.
+- Validate the order amount and currency before creating the Stripe order.
 - Treat webhook payloads as untrusted and verify them before updating the database.
 - Use idempotency to prevent duplicate webhook processing.
 - Store payment metadata securely and avoid storing raw card data.
@@ -296,7 +296,7 @@ sequenceDiagram
     participant Customer as Customer
     participant Browser as Browser
     participant Server as Server
-    participant Razorpay as Razorpay
+    participant Stripe as Stripe
     participant Webhook as Webhook
     participant DB as Database
     participant Success as Success Page
@@ -304,19 +304,19 @@ sequenceDiagram
     Customer->>Browser: Clicks Pay Now
     Browser->>Server: POST /api/payments/razorpay/order
     Server->>DB: Create pending order + payment intent record
-    Server->>Razorpay: Create Razorpay order
-    Razorpay-->>Server: Razorpay order id + options
+    Server->>Stripe: Create Stripe order
+    Stripe-->>Server: Stripe order id + options
     Server-->>Browser: Return order id + public key + amount
-    Browser->>Razorpay: Open checkout widget
-    Customer->>Razorpay: Complete payment
-    Razorpay-->>Browser: Payment success response
+    Browser->>Stripe: Open checkout widget
+    Customer->>Stripe: Complete payment
+    Stripe-->>Browser: Payment success response
     Browser->>Server: POST /api/payments/razorpay/verify
-    Server->>Razorpay: Verify signature
-    Razorpay-->>Server: Signature valid / invalid
+    Server->>Stripe: Verify signature
+    Stripe-->>Server: Signature valid / invalid
     Server->>DB: Update payment status + order status
     Server-->>Browser: Success response
     Browser->>Success: Redirect to success page
-    Razorpay->>Webhook: Send payment webhook event
+    Stripe->>Webhook: Send payment webhook event
     Webhook->>Server: POST /api/payments/razorpay/webhook
     Server->>DB: Reconcile payment and order state
 ```
@@ -324,22 +324,22 @@ sequenceDiagram
 ## Implementation Plan
 
 ### Phase 1: Schema and environment setup
-- [ ] Add Razorpay-related fields to the Order model
+- [ ] Add Stripe-related fields to the Order model
 - [ ] Add a PaymentTransaction model
-- [ ] Add Razorpay payment method and payment status values
-- [ ] Add Razorpay environment variables
+- [ ] Add Stripe payment method and payment status values
+- [ ] Add Stripe environment variables
 - [ ] Confirm the app can read the new environment values safely
 
-### Phase 2: Server-side order creation and Razorpay order generation
+### Phase 2: Server-side order creation and Stripe order generation
 - [ ] Create POST /api/payments/razorpay/order
 - [ ] Validate the authenticated user and checkout payload
 - [ ] Create a pending order record in the database
-- [ ] Generate a Razorpay order using the Razorpay SDK
-- [ ] Return the Razorpay order id and public key to the browser
+- [ ] Generate a Stripe order using the Stripe SDK
+- [ ] Return the Stripe order id and public key to the browser
 
 ### Phase 3: Client-side checkout integration
 - [ ] Update the checkout page to call the new server endpoint
-- [ ] Initialize Razorpay Checkout from the browser
+- [ ] Initialize Stripe Checkout from the browser
 - [ ] Handle success, failure, and cancellation states
 - [ ] Redirect to a dedicated payment result page after verification
 
@@ -368,8 +368,8 @@ Because the current implementation creates an order immediately in the existing 
 
 Recommended approach:
 - Keep the existing order creation route for non-payment flows if needed
-- Introduce a new quote/order-intent step for Razorpay-backed checkout
-- Use Razorpay only for online payments
+- Introduce a new quote/order-intent step for Stripe-backed checkout
+- Use Stripe only for online payments
 - Keep cash-on-delivery and other methods as separate flows if desired later
 
 This will keep the payment lifecycle explicit and easier to audit.
