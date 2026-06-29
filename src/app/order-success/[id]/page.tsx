@@ -1,13 +1,18 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Package, Loader2 } from 'lucide-react'
+import { CheckCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import confetti from 'canvas-confetti'
 import type { Order } from '@/types'
+
+const OrderCelebration = dynamic(
+  () => import('@/components/celebration/OrderCelebration'),
+  { ssr: false }
+)
 
 export default function OrderSuccessPage() {
   const { data: session } = useSession()
@@ -37,7 +42,7 @@ export default function OrderSuccessPage() {
 
   useEffect(() => {
     if (mounted && order) {
-      triggerConfetti()
+      // Celebration overlay is rendered after the order loads
     }
   }, [order, mounted])
 
@@ -54,36 +59,6 @@ export default function OrderSuccessPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const triggerConfetti = () => {
-    // Create multi-directional confetti bursts
-    const duration = 4000 // 4 seconds
-    const end = Date.now() + duration
-
-    const colors = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899']
-
-    const burst = () => {
-      confetti({
-        particleCount: 60,
-        angle: Math.random() * 360,
-        spread: 100,
-        origin: {
-          x: Math.random(),
-          y: Math.random() * 0.7,
-        },
-        colors,
-        gravity: 1,
-        decay: 0.95,
-        ticks: 200,
-      })
-
-      if (Date.now() < end) {
-        requestAnimationFrame(burst)
-      }
-    }
-
-    burst()
   }
 
   if (!mounted) {
@@ -118,6 +93,7 @@ export default function OrderSuccessPage() {
   return (
     <main className="min-h-screen py-12 bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
       <div className="container-custom max-w-xl">
+        {order ? <OrderCelebration /> : null}
         {/* Success Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -165,7 +141,7 @@ export default function OrderSuccessPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-3">
-          <Link href="/dashboard/orders" className="w-full">
+          <Link href={`/dashboard/orders?orderid=${order?.id}`} className="w-full">
             <Button className="w-full">View Order Details</Button>
           </Link>
           <Link href="/products" className="w-full">
