@@ -184,6 +184,7 @@ model Order {
   paymentMethod     PaymentMethod
   paymentStatus     PaymentStatus @default(PENDING)
   orderStatus       OrderStatus   @default(PENDING)
+  payment           Payment?
   
   // Tracking
   trackingNumber    String?
@@ -197,6 +198,28 @@ model Order {
 
   @@index([userId])
   @@index([orderNumber])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String        @unique
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider          String?
+  providerSessionId String?
+  providerReference String?
+  status            PaymentStatus @default(PENDING)
+  amount            Float?
+  currency          String?
+  attemptCount      Int           @default(0)
+  lastEvent         String?
+  metadata          Json?
+  errorMessage      String?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@index([provider])
 }
 
 model OrderItem {
