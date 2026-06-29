@@ -207,14 +207,19 @@ model Payment {
   provider          String?
   providerSessionId String?
   providerReference String?
+  paymentMethod     PaymentMethod
   status            PaymentStatus @default(PENDING)
-  amount            Float?
-  currency          String?
+  amount            Float
+  currency          String
   attemptCount      Int           @default(0)
   lastEvent         String?
   metadata          Json?
   errorMessage      String?
+  failureCode       String?
+  failureMessage    String?
   paidAt            DateTime?
+  capturedAt        DateTime?
+  refundedAt        DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -247,8 +252,11 @@ enum PaymentMethod {
 
 enum PaymentStatus {
   PENDING
+  AUTHORIZED
+  CAPTURED
   COMPLETED
   FAILED
+  CANCELLED
   REFUNDED
 }
 
