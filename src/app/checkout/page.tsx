@@ -19,6 +19,7 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI')
+  const [idempotencyKey, setIdempotencyKey] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -49,6 +50,20 @@ export default function CheckoutPage() {
       fetchAddresses()
     }
   }, [mounted, session])
+
+  useEffect(() => {
+    if (!mounted) {
+      return
+    }
+
+    let key = sessionStorage.getItem('grocery-checkout-idempotency-key')
+    if (!key) {
+      key = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      sessionStorage.setItem('grocery-checkout-idempotency-key', key)
+    }
+
+    setIdempotencyKey(key)
+  }, [mounted])
 
   const fetchAddresses = async () => {
     try {
@@ -122,28 +137,31 @@ export default function CheckoutPage() {
     try {
       setIsSubmitting(true)
 
-      const response = await fetch('/api/orders', {
+      const response = await fetch('/api/payments/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shippingAddressId: selectedAddressId,
           paymentMethod,
+          idempotencyKey,
           items: cartItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.product?.discountPrice || item.product?.price || 0,
           })),
         }),
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to create order')
+        throw new Error(error.error || 'Failed to create checkout session')
       }
 
       const data = await response.json()
-      clearCart()
-      router.push(`/order-success/${data.orderId}`)
+      if (!data.checkoutUrl) {
+        throw new Error('Checkout URL not returned')
+      }
+
+      window.location.href = data.checkoutUrl
     } catch (error) {
       console.error('Order creation failed:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create order')
