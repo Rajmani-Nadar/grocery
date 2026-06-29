@@ -23,8 +23,8 @@ import {
 
 export function Header() {
   const { data: session } = useSession()
-  const { items: cartItems, getItemCount } = useCart()
-  const { items: wishlistItems } = useWishlist()
+  const { items: cartItems, getItemCount, saveCartToStorage } = useCart()
+  const { items: wishlistItems, saveWishlistToStorage } = useWishlist()
   const { isDark, toggleDarkMode } = useTheme()
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -52,6 +52,14 @@ export function Header() {
       setWishlistCount(0)
     }
   }, [wishlistItems, session])
+
+  // Auto-save cart and wishlist whenever they change
+  useEffect(() => {
+    if (session?.user) {
+      saveCartToStorage()
+      saveWishlistToStorage()
+    }
+  }, [cartItems, wishlistItems, session, saveCartToStorage, saveWishlistToStorage])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

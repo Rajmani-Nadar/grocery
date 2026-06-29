@@ -12,6 +12,8 @@ interface CartState {
   getTotal: () => number
   getItemCount: () => number
   setUserId: (userId: string | null) => void
+  saveCartToStorage: () => void
+  loadCartFromStorage: (userId: string) => void
 }
 
 export const useCart = create<CartState>()(
@@ -80,6 +82,28 @@ export const useCart = create<CartState>()(
         // Keep cart items across logins/logouts
         set({ userId })
       },
+
+      saveCartToStorage: () => {
+        const state = get()
+        if (state.userId) {
+          localStorage.setItem(`grocery-cart-${state.userId}`, JSON.stringify(state.items))
+        }
+      },
+
+      loadCartFromStorage: (userId: string) => {
+        const saved = localStorage.getItem(`grocery-cart-${userId}`)
+        if (saved) {
+          try {
+            const items = JSON.parse(saved)
+            set({ items, userId })
+          } catch (e) {
+            console.error('Failed to load cart from storage:', e)
+            set({ items: [], userId })
+          }
+        } else {
+          set({ items: [], userId })
+        }
+      },
     }),
     {
       name: 'grocery-cart',
@@ -96,6 +120,8 @@ interface WishlistState {
   isInWishlist: (productId: string) => boolean
   clearWishlist: () => void
   setUserId: (userId: string | null) => void
+  saveWishlistToStorage: () => void
+  loadWishlistFromStorage: (userId: string) => void
 }
 
 export const useWishlist = create<WishlistState>()(
@@ -129,6 +155,28 @@ export const useWishlist = create<WishlistState>()(
       setUserId: (userId: string | null) => {
         // Keep wishlist items across logins/logouts
         set({ userId })
+      },
+
+      saveWishlistToStorage: () => {
+        const state = get()
+        if (state.userId) {
+          localStorage.setItem(`grocery-wishlist-${state.userId}`, JSON.stringify(state.items))
+        }
+      },
+
+      loadWishlistFromStorage: (userId: string) => {
+        const saved = localStorage.getItem(`grocery-wishlist-${userId}`)
+        if (saved) {
+          try {
+            const items = JSON.parse(saved)
+            set({ items, userId })
+          } catch (e) {
+            console.error('Failed to load wishlist from storage:', e)
+            set({ items: [], userId })
+          }
+        } else {
+          set({ items: [], userId })
+        }
       },
     }),
     {

@@ -18,21 +18,27 @@ const queryClient = new QueryClient({
 
 function SessionSyncProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession()
-  const { setUserId: setCartUserId } = useCart()
-  const { setUserId: setWishlistUserId } = useWishlist()
+  const { setUserId: setCartUserId, clearCart, saveCartToStorage, loadCartFromStorage } = useCart()
+  const { setUserId: setWishlistUserId, clearWishlist, saveWishlistToStorage, loadWishlistFromStorage } = useWishlist()
 
   useEffect(() => {
     if (session?.user) {
-      // User logged in - set userId in stores
+      // User logged in - load their saved cart and wishlist
       const userId = session.user.email || session.user.id || 'anonymous'
       setCartUserId(userId)
       setWishlistUserId(userId)
+      loadCartFromStorage(userId)
+      loadWishlistFromStorage(userId)
     } else {
-      // User logged out - clear stores
+      // User logged out - save current cart/wishlist and clear
+      saveCartToStorage()
+      saveWishlistToStorage()
+      clearCart()
+      clearWishlist()
       setCartUserId(null)
       setWishlistUserId(null)
     }
-  }, [session, setCartUserId, setWishlistUserId])
+  }, [session, setCartUserId, setWishlistUserId, clearCart, clearWishlist, saveCartToStorage, saveWishlistToStorage, loadCartFromStorage, loadWishlistFromStorage])
 
   return <>{children}</>
 }

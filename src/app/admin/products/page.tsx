@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Loader2, Edit2, Trash2, Plus, Search, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { Loader2, Edit2, Trash2, Plus, Search, ChevronLeft, ChevronRight, ChevronDown, Tags } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Product } from '@/types'
 
@@ -155,39 +155,47 @@ export default function AdminProductsPage() {
             <h1 className="text-3xl font-bold text-foreground">Products</h1>
             <p className="text-muted-foreground mt-1">Manage your product catalog</p>
           </div>
-          <div className="relative">
-            <Button 
-              className="gap-2"
-              onClick={() => setShowAddMenu(!showAddMenu)}
-            >
-              <Plus className="w-4 h-4" />
-              Add Product
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-            
-            {/* Dropdown Menu */}
-            {showAddMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-border rounded-lg shadow-lg z-50">
-                <Link href="/admin/products/new">
-                  <button
-                    onClick={() => setShowAddMenu(false)}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-lg first:rounded-t-lg"
-                  >
-                    <p className="font-medium text-foreground">Single Product</p>
-                    <p className="text-sm text-muted-foreground">Add one product at a time</p>
-                  </button>
-                </Link>
-                <Link href="/admin/products/bulk">
-                  <button
-                    onClick={() => setShowAddMenu(false)}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-b-lg border-t border-border"
-                  >
-                    <p className="font-medium text-foreground">Bulk Products</p>
-                    <p className="text-sm text-muted-foreground">Upload multiple products via Excel</p>
-                  </button>
-                </Link>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <Link href="/admin/categories">
+              <Button variant="outline" className="gap-2">
+                <Tags className="w-4 h-4" />
+                Categories
+              </Button>
+            </Link>
+            <div className="relative">
+              <Button 
+                className="gap-2"
+                onClick={() => setShowAddMenu(!showAddMenu)}
+              >
+                <Plus className="w-4 h-4" />
+                Add Product
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+              
+              {/* Dropdown Menu */}
+              {showAddMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-border rounded-lg shadow-lg z-50">
+                  <Link href="/admin/products/new">
+                    <button
+                      onClick={() => setShowAddMenu(false)}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-lg first:rounded-t-lg"
+                    >
+                      <p className="font-medium text-foreground">Single Product</p>
+                      <p className="text-sm text-muted-foreground">Add one product at a time</p>
+                    </button>
+                  </Link>
+                  <Link href="/admin/products/bulk">
+                    <button
+                      onClick={() => setShowAddMenu(false)}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-b-lg border-t border-border"
+                    >
+                      <p className="font-medium text-foreground">Bulk Products</p>
+                      <p className="text-sm text-muted-foreground">Upload multiple products via Excel</p>
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

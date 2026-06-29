@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import Link from 'next/link'
-import { ArrowRight, ShoppingBag, MapPin, Heart, Settings, LayoutGrid } from 'lucide-react'
+import { ArrowRight, ShoppingBag, MapPin, Heart, Settings, LayoutGrid, BarChart3, DollarSign, Package, TrendingUp, Users, Tag } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -18,6 +18,160 @@ export default async function DashboardPage() {
 
   if (!session?.user?.email) {
     redirect('/auth/login')
+  }
+
+  const userRole = (session.user as any)?.role || 'CUSTOMER'
+
+  if (userRole === 'ADMIN') {
+    const [totalProducts, totalOrders, totalCustomers, allOrders] = await Promise.all([
+      prisma.product.count(),
+      prisma.order.count(),
+      prisma.user.count({ where: { role: 'CUSTOMER' } }),
+      prisma.order.findMany({
+        include: {
+          items: true,
+          user: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+
+    const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total || 0), 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
+
+    const todayOrders = allOrders.filter(
+      (order) => new Date(order.createdAt) >= today && new Date(order.createdAt) <= todayEnd
+    )
+    const todaySales = todayOrders.reduce((sum, order) => sum + (order.total || 0), 0)
+    const completedOrders = allOrders.filter((order) => order.orderStatus === 'DELIVERED').length
+    const pendingOrders = allOrders.filter((order) => order.orderStatus === 'PENDING' || order.orderStatus === 'PROCESSING').length
+    const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0
+
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-10 px-4">
+        <div className="container mx-auto max-w-7xl space-y-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Admin Workspace</p>
+              <h1 className="text-3xl font-bold text-foreground">Sales overview for {session.user?.name || 'the store'}</h1>
+              <p className="text-muted-foreground mt-2">Track revenue, order activity, and inventory from one place.</p>
+            </div>
+            <Link href="/admin/products">
+              <Button className="gap-2">
+                <LayoutGrid className="w-4 h-4" />
+                Open Admin Panel
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-orange-200 bg-white p-6 shadow-sm dark:border-orange-900/40 dark:bg-slate-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Revenue</p>
+                  <p className="mt-2 text-3xl font-semibold">₹{totalRevenue.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="rounded-full bg-orange-100 p-3 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                  <DollarSign className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-blue-200 bg-white p-6 shadow-sm dark:border-blue-900/40 dark:bg-slate-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Today&apos;s Sales</p>
+                  <p className="mt-2 text-3xl font-semibold">₹{todaySales.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                  <BarChart3 className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm dark:border-emerald-900/40 dark:bg-slate-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed Orders</p>
+                  <p className="mt-2 text-3xl font-semibold">{completedOrders}</p>
+                </div>
+                <div className="rounded-full bg-emerald-100 p-3 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <Package className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-purple-200 bg-white p-6 shadow-sm dark:border-purple-900/40 dark:bg-slate-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending Orders</p>
+                  <p className="mt-2 text-3xl font-semibold">{pendingOrders}</p>
+                </div>
+                <div className="rounded-full bg-purple-100 p-3 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+            <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Recent Orders</h2>
+                  <p className="text-sm text-muted-foreground">Latest customer purchases and status updates.</p>
+                </div>
+                <Link href="/admin/orders" className="text-sm font-medium text-primary hover:underline">
+                  View all
+                </Link>
+              </div>
+              <div className="mt-6 space-y-3">
+                {allOrders.slice(0, 5).map((order) => (
+                  <div key={order.id} className="flex items-center justify-between rounded-xl border border-border bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                    <div>
+                      <p className="font-medium">{order.orderNumber}</p>
+                      <p className="text-sm text-muted-foreground">{order.user?.name || 'Customer'} • {new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">₹{Math.round(order.total)}</p>
+                      <p className="text-xs text-muted-foreground">{order.orderStatus}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900">
+                <h2 className="text-lg font-semibold">Quick Actions</h2>
+                <div className="mt-4 space-y-3">
+                  <Link href="/admin/products" className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <span className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /> Manage Products</span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                  <Link href="/admin/categories" className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <span className="flex items-center gap-2"><Tag className="h-4 w-4 text-primary" /> Manage Categories</span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">Store Snapshot</h2>
+                </div>
+                <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between"><span>Total Products</span><span className="font-semibold text-foreground">{totalProducts}</span></div>
+                  <div className="flex items-center justify-between"><span>Total Customers</span><span className="font-semibold text-foreground">{totalCustomers}</span></div>
+                  <div className="flex items-center justify-between"><span>Average Order Value</span><span className="font-semibold text-foreground">₹{avgOrderValue.toLocaleString('en-IN')}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   // Fetch user data

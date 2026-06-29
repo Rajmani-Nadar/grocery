@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { useCart } from '@/store'
 import { Button } from '@/components/ui/button'
@@ -58,7 +59,10 @@ export function CartContent() {
                 </button>
               </div>
               <button
-                onClick={() => removeItem(item.productId)}
+                onClick={() => {
+                  removeItem(item.productId)
+                  toast.success('Item removed from cart')
+                }}
                 className="p-2 text-destructive hover:bg-red-50 dark:hover:bg-red-950 rounded"
               >
                 <Trash2 size={18} />
@@ -106,7 +110,10 @@ export function CartContent() {
         <Button
           variant="ghost"
           className="w-full mt-4"
-          onClick={clearCart}
+          onClick={() => {
+            clearCart()
+            toast.success('Cart cleared')
+          }}
         >
           Clear Cart
         </Button>

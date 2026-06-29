@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
@@ -78,6 +79,7 @@ export default function ProductDetailPage() {
     if (product) {
       addItem(product as any, quantity)
       setAddedToCart(true)
+      toast.success('Product added to cart')
       setTimeout(() => setAddedToCart(false), 2000)
     }
   }
@@ -93,8 +95,10 @@ export default function ProductDetailPage() {
     if (product) {
       if (isInWishlist(product.id)) {
         removeFromWishlist(product.id)
+        toast('Removed from wishlist')
       } else {
         addToWishlist(product.id)
+        toast.success('Added to wishlist')
       }
     }
   }
