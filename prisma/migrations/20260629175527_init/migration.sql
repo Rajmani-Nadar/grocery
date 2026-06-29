@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'CUSTOMER');
 
 -- CreateEnum
@@ -166,6 +166,27 @@ CREATE TABLE "Order" (
 );
 
 -- CreateTable
+CREATE TABLE "Payment" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "provider" TEXT,
+    "providerSessionId" TEXT,
+    "providerReference" TEXT,
+    "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "amount" DOUBLE PRECISION,
+    "currency" TEXT,
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "lastEvent" TEXT,
+    "metadata" JSONB,
+    "errorMessage" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "OrderItem" (
     "id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
@@ -302,6 +323,15 @@ CREATE INDEX "Order_userId_idx" ON "Order"("userId");
 CREATE INDEX "Order_orderNumber_idx" ON "Order"("orderNumber");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Payment_orderId_key" ON "Payment"("orderId");
+
+-- CreateIndex
+CREATE INDEX "Payment_status_idx" ON "Payment"("status");
+
+-- CreateIndex
+CREATE INDEX "Payment_provider_idx" ON "Payment"("provider");
+
+-- CreateIndex
 CREATE INDEX "OrderItem_orderId_idx" ON "OrderItem"("orderId");
 
 -- CreateIndex
@@ -359,6 +389,9 @@ ALTER TABLE "Order" ADD CONSTRAINT "Order_shippingAddressId_fkey" FOREIGN KEY ("
 ALTER TABLE "Order" ADD CONSTRAINT "Order_billingAddressId_fkey" FOREIGN KEY ("billingAddressId") REFERENCES "Address"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -378,4 +411,3 @@ ALTER TABLE "Wishlist" ADD CONSTRAINT "Wishlist_userId_fkey" FOREIGN KEY ("userI
 
 -- AddForeignKey
 ALTER TABLE "Wishlist" ADD CONSTRAINT "Wishlist_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
