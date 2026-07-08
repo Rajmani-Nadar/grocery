@@ -207,6 +207,9 @@ model Payment {
   provider          String?
   providerSessionId String?
   providerReference String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  paymentSignature  String?
   paymentMethod     PaymentMethod
   status            PaymentStatus @default(PENDING)
   amount            Float
@@ -255,6 +258,7 @@ enum PaymentStatus {
   AUTHORIZED
   CAPTURED
   COMPLETED
+  PAID
   FAILED
   CANCELLED
   REFUNDED
@@ -269,6 +273,7 @@ enum OrderStatus {
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  PAYMENT_FAILED
   RETURNED
 }
 

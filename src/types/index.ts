@@ -110,7 +110,7 @@ export interface Order {
 
 export type PaymentMethod = 'UPI' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH_ON_DELIVERY' | 'WALLET'
 
-export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
+export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'COMPLETED' | 'PAID' | 'FAILED' | 'CANCELLED' | 'REFUNDED'
 
 export type OrderStatus = 
   | 'PENDING' 
@@ -121,6 +121,7 @@ export type OrderStatus =
   | 'OUT_FOR_DELIVERY' 
   | 'DELIVERED' 
   | 'CANCELLED' 
+  | 'PAYMENT_FAILED' 
   | 'RETURNED'
 
 export interface Review {

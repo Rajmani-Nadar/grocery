@@ -10,6 +10,13 @@ import Link from 'next/link'
 import { AlertCircle, Loader2, CheckCircle, Home, Briefcase, MapPin } from 'lucide-react'
 import type { Address, PaymentMethod } from '@/types'
 import toast from 'react-hot-toast'
+import { loadRazorpayScript } from '@/lib/razorpay'
+
+declare global {
+  interface Window {
+    Razorpay: any
+  }
+}
 
 export default function CheckoutPage() {
   const { data: session } = useSession()
@@ -137,13 +144,16 @@ export default function CheckoutPage() {
     try {
       setIsSubmitting(true)
 
-      const response = await fetch('/api/payments/create-session', {
+      await loadRazorpayScript()
+
+      const response = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shippingAddressId: selectedAddressId,
           paymentMethod,
           idempotencyKey,
+          amount: Number(getTotal().toFixed(2)),
           items: cartItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -151,17 +161,71 @@ export default function CheckoutPage() {
         }),
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create checkout session')
-      }
-
       const data = await response.json()
-      if (!data.checkoutUrl) {
-        throw new Error('Checkout URL not returned')
+      if (!response.ok || !data.order_id) {
+        throw new Error(data.error || 'Failed to initialize payment')
       }
 
-      window.location.href = data.checkoutUrl
+      const selectedAddress = addresses.find((address) => address.id === selectedAddressId)
+
+      const options = {
+        key: data.key_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Grocery Store',
+        description: `Order ${data.orderId}`,
+        order_id: data.order_id,
+        prefill: {
+          name: data.customer?.name || session?.user?.name || 'Customer',
+          email: data.customer?.email || session?.user?.email || '',
+          contact: data.customer?.phone || selectedAddress?.phone || '',
+        },
+        theme: {
+          color: '#2563eb',
+        },
+        handler: async (paymentResponse: {
+          razorpay_payment_id: string
+          razorpay_order_id: string
+          razorpay_signature: string
+        }) => {
+          try {
+            const verifyResponse = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: data.orderId,
+                paymentId: data.paymentId,
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              }),
+            })
+
+            const verifyData = await verifyResponse.json()
+            if (!verifyResponse.ok || !verifyData.success) {
+              throw new Error(verifyData.error || 'Payment verification failed')
+            }
+
+            clearCart()
+            toast.success('Payment successful')
+            router.push(`/order-success/${data.orderId}`)
+          } catch (error) {
+            console.error('Payment verification failed:', error)
+            toast.error(error instanceof Error ? error.message : 'Payment verification failed')
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast.error('Payment cancelled')
+          },
+        },
+      }
+
+      const razorpay = new window.Razorpay(options)
+      razorpay.on('payment.failed', (response: { error: { description?: string } }) => {
+        toast.error(response.error?.description || 'Payment failed')
+      })
+      razorpay.open()
     } catch (error) {
       console.error('Order creation failed:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create order')
