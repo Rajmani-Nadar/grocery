@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { fulfillOrder } from '@/lib/fulfill-order'
 
 interface VerifyRequest {
   orderId: string
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
     if (payment.order.userId !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    if (payment.status === 'PAID' || payment.status === 'COMPLETED' || payment.status === 'CAPTURED') {
+    if (payment.status === 'PAID' && payment.lastEvent === 'payment.captured') {
       return NextResponse.json({ success: true, message: 'Payment already verified' })
     }
     if (payment.razorpayOrderId !== razorpay_order_id) {
@@ -75,33 +76,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: 'PAID',
-          providerSessionId: razorpay_payment_id,
-          razorpayPaymentId: razorpay_payment_id,
-          paymentSignature: razorpay_signature,
-          paidAt: new Date(),
-          capturedAt: new Date(),
-          lastEvent: 'payment.captured',
-          metadata: {
-            ...(payment.metadata as Record<string, unknown> | null),
-            razorpayPaymentId: razorpay_payment_id,
-            razorpayOrderId: razorpay_order_id,
-            verifiedAt: new Date().toISOString(),
-          },
-        },
-      })
-
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: {
-          paymentStatus: 'PAID',
-          orderStatus: 'CONFIRMED',
-        },
-      })
+    await fulfillOrder({
+      orderId,
+      paymentId,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+      eventType: 'payment.captured',
     })
 
     return NextResponse.json({ success: true, message: 'Payment verified successfully' })

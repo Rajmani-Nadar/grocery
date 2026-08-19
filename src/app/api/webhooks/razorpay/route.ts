@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { fulfillOrder } from '@/lib/fulfill-order'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,40 +42,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
-    if (payment.status === 'PAID' || payment.status === 'COMPLETED' || payment.status === 'CAPTURED') {
+    if (
+      payment.status === 'PAID' &&
+      payment.lastEvent === 'payment.captured' &&
+      (eventType === 'payment.captured' || eventType === 'payment.authorized')
+    ) {
       return NextResponse.json({ received: true })
     }
 
     if (eventType === 'payment.captured' || eventType === 'payment.authorized') {
-      await prisma.$transaction(async (tx) => {
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: 'PAID',
-            providerSessionId: paymentEntity.id,
-            razorpayPaymentId: paymentEntity.id,
-            paidAt: new Date(),
-            capturedAt: new Date(),
-            lastEvent: eventType,
-            metadata: {
-              ...(payment.metadata as Record<string, unknown> | null),
-              razorpayPaymentId: paymentEntity.id,
-              webhookEvent: eventType,
-            },
-          },
-        })
-
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            paymentStatus: 'PAID',
-            orderStatus: 'CONFIRMED',
-          },
-        })
+      await fulfillOrder({
+        orderId,
+        paymentId,
+        razorpayOrderId: paymentEntity.order_id,
+        razorpayPaymentId: paymentEntity.id,
+        eventType,
       })
     }
 
     if (eventType === 'payment.failed') {
+      if (payment.status === 'PAID' || payment.status === 'COMPLETED' || payment.status === 'CAPTURED') {
+        return NextResponse.json({ received: true })
+      }
+
       await prisma.$transaction(async (tx) => {
         await tx.payment.update({
           where: { id: payment.id },
