@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useCart } from '@/store'
 import Link from 'next/link'
 import { AlertCircle, Loader2, CheckCircle, Home, Briefcase, MapPin } from 'lucide-react'
@@ -13,8 +12,17 @@ import toast from 'react-hot-toast'
 import { loadRazorpayScript } from '@/lib/razorpay'
 
 declare global {
+  interface RazorpayInstance {
+    on(event: 'payment.failed', handler: (response: { error?: { description?: string } }) => void): void
+    open(): void
+  }
+
+  interface RazorpayConstructor {
+    new (options: Record<string, unknown>): RazorpayInstance
+  }
+
   interface Window {
-    Razorpay: any
+    Razorpay: RazorpayConstructor
   }
 }
 
@@ -29,18 +37,6 @@ export default function CheckoutPage() {
   const [idempotencyKey, setIdempotencyKey] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Payment details state
-  const [paymentDetails, setPaymentDetails] = useState({
-    upiId: '',
-    cardHolderName: '',
-    cardNumber: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cvv: '',
-  })
-
-  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     setMounted(true)
@@ -93,51 +89,9 @@ export default function CheckoutPage() {
     }
   }
 
-  const validatePaymentDetails = (): boolean => {
-    const newErrors: Record<string, string> = {}
-
-    if (paymentMethod === 'UPI') {
-      if (!paymentDetails.upiId.trim()) {
-        newErrors.upiId = 'UPI ID is required'
-      } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(paymentDetails.upiId)) {
-        newErrors.upiId = 'Invalid UPI ID format (e.g., name@paytm)'
-      }
-    }
-
-    if (paymentMethod === 'CREDIT_CARD' || paymentMethod === 'DEBIT_CARD') {
-      if (!paymentDetails.cardHolderName.trim()) {
-        newErrors.cardHolderName = 'Card holder name is required'
-      }
-      if (!paymentDetails.cardNumber.trim()) {
-        newErrors.cardNumber = 'Card number is required'
-      } else if (!/^\d{13,19}$/.test(paymentDetails.cardNumber.replace(/\s/g, ''))) {
-        newErrors.cardNumber = 'Invalid card number'
-      }
-      if (!paymentDetails.expiryMonth) {
-        newErrors.expiryMonth = 'Expiry month is required'
-      }
-      if (!paymentDetails.expiryYear) {
-        newErrors.expiryYear = 'Expiry year is required'
-      }
-      if (!paymentDetails.cvv.trim()) {
-        newErrors.cvv = 'CVV is required'
-      } else if (!/^\d{3,4}$/.test(paymentDetails.cvv)) {
-        newErrors.cvv = 'Invalid CVV'
-      }
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
       toast.error('Please select a delivery address')
-      return
-    }
-
-    if (!validatePaymentDetails()) {
-      toast.error('Please check your payment details')
       return
     }
 
@@ -167,7 +121,6 @@ export default function CheckoutPage() {
       }
 
       const selectedAddress = addresses.find((address) => address.id === selectedAddressId)
-
       const options = {
         key: data.key_id,
         amount: data.amount,
@@ -180,9 +133,7 @@ export default function CheckoutPage() {
           email: data.customer?.email || session?.user?.email || '',
           contact: data.customer?.phone || selectedAddress?.phone || '',
         },
-        theme: {
-          color: '#2563eb',
-        },
+        theme: { color: '#2563eb' },
         handler: async (paymentResponse: {
           razorpay_payment_id: string
           razorpay_order_id: string
@@ -200,12 +151,10 @@ export default function CheckoutPage() {
                 razorpay_signature: paymentResponse.razorpay_signature,
               }),
             })
-
             const verifyData = await verifyResponse.json()
             if (!verifyResponse.ok || !verifyData.success) {
               throw new Error(verifyData.error || 'Payment verification failed')
             }
-
             clearCart()
             toast.success('Payment successful')
             router.push(`/order-success/${data.orderId}`)
@@ -222,8 +171,8 @@ export default function CheckoutPage() {
       }
 
       const razorpay = new window.Razorpay(options)
-      razorpay.on('payment.failed', (response: { error: { description?: string } }) => {
-        toast.error(response.error?.description || 'Payment failed')
+      razorpay.on('payment.failed', (paymentFailure: { error?: { description?: string } }) => {
+        toast.error(paymentFailure.error?.description || 'Payment failed')
       })
       razorpay.open()
     } catch (error) {
@@ -365,135 +314,6 @@ export default function CheckoutPage() {
                   </label>
                 ))}
               </div>
-
-              {/* Dynamic Payment Fields */}
-              {paymentMethod === 'UPI' && (
-                <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">UPI ID</label>
-                    <Input
-                      type="text"
-                      placeholder="name@paytm"
-                      value={paymentDetails.upiId}
-                      onChange={(e) =>
-                        setPaymentDetails({ ...paymentDetails, upiId: e.target.value })
-                      }
-                      className={errors.upiId ? 'border-red-500' : ''}
-                    />
-                    {errors.upiId && (
-                      <p className="text-sm text-red-500 mt-1">{errors.upiId}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {(paymentMethod === 'CREDIT_CARD' || paymentMethod === 'DEBIT_CARD') && (
-                <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Card Holder Name</label>
-                    <Input
-                      type="text"
-                      placeholder="John Doe"
-                      value={paymentDetails.cardHolderName}
-                      onChange={(e) =>
-                        setPaymentDetails({ ...paymentDetails, cardHolderName: e.target.value })
-                      }
-                      className={errors.cardHolderName ? 'border-red-500' : ''}
-                    />
-                    {errors.cardHolderName && (
-                      <p className="text-sm text-red-500 mt-1">{errors.cardHolderName}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Card Number</label>
-                    <Input
-                      type="text"
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentDetails.cardNumber}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\s/g, '')
-                        setPaymentDetails({
-                          ...paymentDetails,
-                          cardNumber: value,
-                        })
-                      }}
-                      className={errors.cardNumber ? 'border-red-500' : ''}
-                    />
-                    {errors.cardNumber && (
-                      <p className="text-sm text-red-500 mt-1">{errors.cardNumber}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Month</label>
-                      <select
-                        value={paymentDetails.expiryMonth}
-                        onChange={(e) =>
-                          setPaymentDetails({ ...paymentDetails, expiryMonth: e.target.value })
-                        }
-                        className={`w-full px-3 py-2 border rounded-md dark:bg-slate-900 ${
-                          errors.expiryMonth ? 'border-red-500' : 'border-border'
-                        }`}
-                      >
-                        <option value="">MM</option>
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                            {String(i + 1).padStart(2, '0')}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.expiryMonth && (
-                        <p className="text-sm text-red-500 mt-1">{errors.expiryMonth}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Year</label>
-                      <select
-                        value={paymentDetails.expiryYear}
-                        onChange={(e) =>
-                          setPaymentDetails({ ...paymentDetails, expiryYear: e.target.value })
-                        }
-                        className={`w-full px-3 py-2 border rounded-md dark:bg-slate-900 ${
-                          errors.expiryYear ? 'border-red-500' : 'border-border'
-                        }`}
-                      >
-                        <option value="">YY</option>
-                        {Array.from({ length: 15 }, (_, i) => {
-                          const year = new Date().getFullYear() + i
-                          return (
-                            <option key={year} value={String(year).slice(-2)}>
-                              {String(year).slice(-2)}
-                            </option>
-                          )
-                        })}
-                      </select>
-                      {errors.expiryYear && (
-                        <p className="text-sm text-red-500 mt-1">{errors.expiryYear}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">CVV</label>
-                      <Input
-                        type="text"
-                        placeholder="123"
-                        maxLength={4}
-                        value={paymentDetails.cvv}
-                        onChange={(e) =>
-                          setPaymentDetails({ ...paymentDetails, cvv: e.target.value })
-                        }
-                        className={errors.cvv ? 'border-red-500' : ''}
-                      />
-                      {errors.cvv && (
-                        <p className="text-sm text-red-500 mt-1">{errors.cvv}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {paymentMethod === 'CASH_ON_DELIVERY' && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg flex gap-3">

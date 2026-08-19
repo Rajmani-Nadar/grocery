@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Order } from '@/types'
+import { RetryPaymentButton } from '@/components/payment/retry-payment-button'
 
 const OrderCelebration = dynamic(
   () => import('@/components/celebration/OrderCelebration'),
@@ -127,6 +128,15 @@ export default function OrderSuccessPage() {
                 {order.orderStatus}
               </span>
             </div>
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-4 mt-4 border-t border-border">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Payment Status</p>
+              <p className="font-semibold">{order.paymentStatus}</p>
+            </div>
+            {order.paymentStatus === 'PENDING' && order.orderStatus === 'PENDING' && (
+              <RetryPaymentButton orderId={order.id} onSuccess={fetchOrder} />
+            )}
           </div>
         </div>
 

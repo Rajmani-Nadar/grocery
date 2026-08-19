@@ -9,6 +9,7 @@ import { Loader2, ChevronDown, Package, Clock, CheckCircle, AlertCircle } from '
 import Link from 'next/link'
 import type { Order } from '@/types'
 import toast from 'react-hot-toast'
+import { RetryPaymentButton } from '@/components/payment/retry-payment-button'
 
 function OrdersContent() {
   const { data: session } = useSession()
@@ -260,6 +261,9 @@ function OrdersContent() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 mt-4">
+                    {order.paymentStatus === 'PENDING' && order.orderStatus === 'PENDING' && (
+                      <RetryPaymentButton orderId={order.id} onSuccess={fetchOrders} />
+                    )}
                     <Link href={`/order-success/${order.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">
                         View Order
