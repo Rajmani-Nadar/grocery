@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         await tx.payment.update({
           where: { id: payment.id },
           data: {
-            status: 'PENDING',
+            status: 'FAILED',
             failureCode: paymentEntity.error_code || 'PAYMENT_FAILED',
             failureMessage: paymentEntity.error_description || 'Payment failed',
             lastEvent: eventType,

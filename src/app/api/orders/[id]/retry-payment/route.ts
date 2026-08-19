@@ -49,7 +49,10 @@ export async function POST(
     }
 
     const claimedPayment = await prisma.payment.updateMany({
-      where: { id: order.payment.id, status: 'PENDING' },
+      where: {
+        id: order.payment.id,
+        status: { in: ['PENDING', 'FAILED'] },
+      },
       data: {
         status: 'AUTHORIZED',
         attemptCount: { increment: 1 },
