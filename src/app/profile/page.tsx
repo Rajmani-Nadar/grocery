@@ -1,12 +1,13 @@
 'use client'
 
 import React, { Suspense, useState, useEffect, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Mail, Phone, MapPin, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { AlertCircle, ArrowLeft, CheckCircle, ChevronDown, ChevronUp, Hand, KeyRound, Lock, Mail, MapPin, Phone, Save, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
@@ -49,6 +50,7 @@ function ProfileContent() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false)
 
   useEffect(() => {
     if (!session?.user?.email) {
@@ -102,6 +104,8 @@ function ProfileContent() {
   const handleSaveProfile = async () => {
     if (!profile) return
 
+    const isPasswordUpdate = Boolean(currentPassword || newPassword || confirmPassword)
+
     try {
       setIsSaving(true)
       const payload: any = {
@@ -137,6 +141,10 @@ function ProfileContent() {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
+      if (isPasswordUpdate) {
+        setIsPasswordFormOpen(false)
+        toast.success('Password updated successfully.')
+      }
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
       setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update profile' })
@@ -307,41 +315,88 @@ function ProfileContent() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>Update your password securely.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Current Password</label>
-                  <Input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Current password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">New Password</label>
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Confirm New Password</label>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <motion.div
+              animate={{ scale: isPasswordFormOpen ? 1.01 : 1 }}
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
+            >
+              <Card className={`rounded-2xl bg-white shadow-sm transition-shadow dark:bg-slate-900 ${isPasswordFormOpen ? 'border-green-300 shadow-[0_8px_30px_rgba(34,197,94,0.14)] dark:border-green-800' : 'border-border'}`}>
+                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle>Change Password</CardTitle>
+                    <CardDescription>Update your password securely.</CardDescription>
+                  </div>
+                  <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                    {!isPasswordFormOpen && (
+                      <motion.span
+                        aria-hidden="true"
+                        animate={{ y: [-2, 2, -2], rotate: [-4, 4, -4] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                        className="text-primary-600"
+                      >
+                        <Hand size={20} />
+                      </motion.span>
+                    )}
+                    <button
+                      type="button"
+                      aria-expanded={isPasswordFormOpen}
+                      aria-controls="change-password-form"
+                      onClick={() => setIsPasswordFormOpen((open) => !open)}
+                      className={`flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:w-auto ${isPasswordFormOpen ? 'bg-gradient-to-r from-green-600 to-emerald-500 text-white shadow-md' : 'border border-slate-200 bg-white text-slate-700 hover:border-green-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}
+                    >
+                      {isPasswordFormOpen ? <Sparkles size={16} /> : <Lock size={16} />}
+                      {isPasswordFormOpen ? 'Hide Password Form' : 'Change Password'}
+                      {isPasswordFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+                </CardHeader>
+                <AnimatePresence initial={false}>
+                  {isPasswordFormOpen && (
+                    <motion.div
+                      id="change-password-form"
+                      initial={{ height: 0, opacity: 0, y: -10 }}
+                      animate={{ height: 'auto', opacity: 1, y: 0 }}
+                      exit={{ height: 0, opacity: 0, y: -10 }}
+                      transition={{ duration: 0.35, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Current Password</label>
+                          <Input
+                            type="password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Current password"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">New Password</label>
+                          <Input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="New password"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Confirm New Password</label>
+                          <Input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirm new password"
+                          />
+                        </div>
+                        <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full">
+                          <KeyRound size={18} className="mr-2" />
+                          {isSaving ? 'Updating Password...' : 'Update Password'}
+                        </Button>
+                      </CardContent>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </motion.div>
 
             {/* Addresses */}
             <Card>
