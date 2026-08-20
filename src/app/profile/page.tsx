@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { Suspense, useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Mail, Phone, MapPin, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Address {
   id: string
@@ -31,9 +32,14 @@ interface UserProfile {
   addresses: Address[]
 }
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { data: session } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const addressSectionRef = useRef<HTMLDivElement>(null)
+  const firstAddressInputRef = useRef<HTMLInputElement>(null)
+  const shouldOpenAddress = searchParams.get('openAddress') === 'true'
+  const returnTo = searchParams.get('returnTo')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -52,6 +58,23 @@ export default function ProfilePage() {
 
     fetchProfile()
   }, [session, router])
+
+  useEffect(() => {
+    if (!shouldOpenAddress || isLoading || !profile) return
+
+    setEditingAddressId('new')
+    setNewAddress({
+      type: 'HOME',
+      isDefault: profile.addresses.length === 0,
+    })
+
+    const focusTimer = window.setTimeout(() => {
+      addressSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      firstAddressInputRef.current?.focus()
+    }, 0)
+
+    return () => window.clearTimeout(focusTimer)
+  }, [shouldOpenAddress, isLoading, profile])
 
   const fetchProfile = async () => {
     try {
@@ -152,6 +175,11 @@ export default function ProfilePage() {
       await fetchProfile()
       setEditingAddressId(null)
       setNewAddress({})
+      if (returnTo) {
+        toast.success('Address saved. Continue your checkout.')
+        router.replace(returnTo)
+        return
+      }
       setMessage({ type: 'success', text: 'Address saved successfully!' })
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
@@ -233,7 +261,7 @@ export default function ProfilePage() {
         {/* Profile Information */}
         {profile && (
           <>
-            <Card>
+            <Card ref={addressSectionRef}>
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
                 <CardDescription>Update your personal details</CardDescription>
@@ -403,6 +431,7 @@ export default function ProfilePage() {
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Full Name *</label>
                         <Input
+                          ref={firstAddressInputRef}
                           type="text"
                           name="fullName"
                           value={newAddress.fullName || ''}
@@ -510,5 +539,13 @@ export default function ProfilePage() {
         )}
       </div>
     </main>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfileContent />
+    </Suspense>
   )
 }

@@ -43,6 +43,21 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
+    if (!mounted) return
+
+    const savedPaymentMethod = sessionStorage.getItem('grocery-checkout-payment-method')
+    if (savedPaymentMethod) {
+      setPaymentMethod(savedPaymentMethod as PaymentMethod)
+    }
+  }, [mounted])
+
+  useEffect(() => {
+    if (mounted) {
+      sessionStorage.setItem('grocery-checkout-payment-method', paymentMethod)
+    }
+  }, [mounted, paymentMethod])
+
+  useEffect(() => {
     if (!session) {
       router.push('/auth/login')
     }
@@ -74,13 +89,15 @@ export default function CheckoutPage() {
       const response = await fetch('/api/auth/profile')
       if (!response.ok) throw new Error('Failed to fetch addresses')
       const data = await response.json()
-      setAddresses(data.addresses || [])
-      
-      // Auto-select default address if available
-      const defaultAddr = data.addresses?.find((a: Address) => a.isDefault)
-      if (defaultAddr) {
-        setSelectedAddressId(defaultAddr.id)
-      }
+      const nextAddresses = (data.addresses || []) as Address[]
+      setAddresses(nextAddresses)
+
+      const newestAddress = [...nextAddresses].sort((first, second) => {
+        const firstTime = new Date((first as Address & { createdAt?: string }).createdAt || 0).getTime()
+        const secondTime = new Date((second as Address & { createdAt?: string }).createdAt || 0).getTime()
+        return secondTime - firstTime
+      })[0]
+      if (newestAddress) setSelectedAddressId(newestAddress.id)
     } catch (error) {
       console.error('Failed to fetch addresses:', error)
       toast.error('Failed to load addresses')
@@ -278,9 +295,12 @@ export default function CheckoutPage() {
               </div>
 
               {addresses.length === 0 && (
-                <Link href="/profile">
-                  <Button className="w-full mt-4">Add Address</Button>
-                </Link>
+                <Button
+                  className="w-full mt-4"
+                  onClick={() => router.push('/profile?returnTo=%2Fcheckout&openAddress=true')}
+                >
+                  Add Address
+                </Button>
               )}
             </div>
 
