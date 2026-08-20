@@ -47,7 +47,13 @@ const getEmailIdentity = () => ({
   companyName: process.env.EMAIL_COMPANY_NAME || 'Grocery',
   companyEmail: process.env.EMAIL_CONTACT || process.env.SMTP_FROM || process.env.GMAIL_EMAIL || '',
   companyAddress: process.env.EMAIL_COMPANY_ADDRESS || '',
-  baseUrl: (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  baseUrl: (
+    process.env.EMAIL_APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.NODE_ENV === 'production'
+      ? 'https://rajmani-grocery.vercel.app'
+      : process.env.NEXTAUTH_URL || 'http://localhost:3000')
+  ).replace(/\/$/, ''),
 })
 
 export async function sendEmail({ to, subject, html, text, replyTo }: SendEmailOptions) {
