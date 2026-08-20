@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useCart } from '@/store'
 import { useWishlist } from '@/store'
+import { showCartToast, showWishlistToast } from '@/components/ui/action-toast'
 import { useSession } from 'next-auth/react'
 import { useAuthGate } from '@/components/auth/auth-gate'
 
@@ -84,7 +85,7 @@ export default function ProductDetailPage() {
       if (!session && !requireAuth({ type: 'cart', productId: product.id, quantity }, 'Login to add products to your cart.')) return
       addItem(product as any, quantity)
       setAddedToCart(true)
-      toast.success('Product added to cart')
+      showCartToast(product.name, router)
       setTimeout(() => setAddedToCart(false), 2000)
     }
   }
@@ -104,7 +105,7 @@ export default function ProductDetailPage() {
         toast('Removed from wishlist')
       } else {
         addToWishlist(product.id)
-        toast.success('Added to wishlist')
+        showWishlistToast(product.name, router)
       }
     }
   }

@@ -62,7 +62,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <AuthGateProvider>{children}</AuthGateProvider>
           <Toaster
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
               duration: 4000,
               style: {

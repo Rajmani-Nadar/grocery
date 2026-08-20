@@ -10,6 +10,7 @@ import { Heart, ShoppingCart, ArrowLeft, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useWishlist, useCart } from '@/store'
+import { showCartToast } from '@/components/ui/action-toast'
 
 interface Product {
   id: string
@@ -70,7 +71,7 @@ export default function WishlistPage() {
 
   const handleAddToCart = (product: Product) => {
     addItem(product as any, 1)
-    toast.success('Product added to cart')
+    showCartToast(product.name, router)
   }
 
   const handleRemoveFromWishlist = (productId: string) => {

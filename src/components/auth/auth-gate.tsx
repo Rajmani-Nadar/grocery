@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { useCart, useWishlist } from '@/store'
 import { AuthModal } from '@/components/auth/auth-modal'
 import { clearPendingAction, readPendingAction, savePendingAction, type PendingAction } from '@/lib/pending-action'
+import { showCartToast, showWishlistToast } from '@/components/ui/action-toast'
 
 interface AuthGateContextValue {
   requireAuth: (action: PendingAction, message?: string) => boolean
@@ -39,16 +40,16 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
 
     clearPendingAction()
     const finish = async () => {
-      if (action.type === 'wishlist') {
-        addWishlistItem(action.productId)
-        toast.success('Added to wishlist')
-        return
-      }
-
       const response = await fetch(`/api/products?id=${encodeURIComponent(action.productId)}`)
       const product = await response.json()
       if (!response.ok || !product?.id) {
         toast.error('Unable to continue that action')
+        return
+      }
+
+      if (action.type === 'wishlist') {
+        addWishlistItem(action.productId)
+        showWishlistToast(product.name, router)
         return
       }
 
@@ -61,7 +62,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
       } else if (action.type === 'review') {
         router.push(`/products/${product.slug}#reviews`)
       } else {
-        toast.success('Product added to cart')
+        showCartToast(product.name, router)
       }
     }
 

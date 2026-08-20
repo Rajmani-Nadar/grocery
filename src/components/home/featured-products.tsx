@@ -3,6 +3,7 @@
 import React from 'react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
@@ -16,8 +17,10 @@ import { useAuthGate } from '@/components/auth/auth-gate'
 import { Heart, ShoppingCart, Star } from 'lucide-react'
 import { formatCurrency } from '@/utils'
 import type { Product } from '@/types'
+import { showCartToast, showWishlistToast } from '@/components/ui/action-toast'
 
 export function FeaturedProducts() {
+  const router = useRouter()
   const { data: response } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
@@ -54,10 +57,10 @@ export function FeaturedProducts() {
     e.preventDefault()
     if (!session && !requireAuth({ type: 'cart', productId: product.id, quantity: 1 }, 'Login to add products to your cart.')) return
     addItem(product, 1)
-    toast.success('Product added to cart')
+    showCartToast(product.name, router)
   }
 
-  const handleWishlist = (productId: string, e: React.MouseEvent) => {
+  const handleWishlist = (productId: string, productName: string, e: React.MouseEvent) => {
     e.preventDefault()
     if (!session && !requireAuth({ type: 'wishlist', productId }, 'Login to save products to your wishlist.')) return
     if (isInWishlist(productId)) {
@@ -65,7 +68,7 @@ export function FeaturedProducts() {
       toast('Removed from wishlist')
     } else {
       addToWishlist(productId)
-      toast.success('Added to wishlist')
+      showWishlistToast(productName, router)
     }
   }
 
@@ -157,7 +160,7 @@ export function FeaturedProducts() {
 
                       {/* Wishlist Button */}
                       <button
-                        onClick={(e) => handleWishlist(product.id, e)}
+                        onClick={(e) => handleWishlist(product.id, product.name, e)}
                         className="absolute top-3 left-3 p-2 bg-white dark:bg-slate-900 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                       >
                         <Heart

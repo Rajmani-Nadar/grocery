@@ -16,6 +16,7 @@ import { useAuthGate } from '@/components/auth/auth-gate'
 import { Heart, ShoppingCart, Star, X } from 'lucide-react'
 import { formatCurrency } from '@/utils'
 import type { Product, Category } from '@/types'
+import { showCartToast, showWishlistToast } from '@/components/ui/action-toast'
 
 export default function ProductsPage() {
   const searchParams = useSearchParams()
@@ -82,10 +83,10 @@ export default function ProductsPage() {
     e.preventDefault()
     if (!session && !requireAuth({ type: 'cart', productId: product.id, quantity: 1 }, 'Login to add products to your cart.')) return
     addItem(product, 1)
-    toast.success('Product added to cart')
+    showCartToast(product.name, router)
   }
 
-  const handleWishlist = (productId: string, e: React.MouseEvent) => {
+  const handleWishlist = (productId: string, productName: string, e: React.MouseEvent) => {
     e.preventDefault()
     if (!session && !requireAuth({ type: 'wishlist', productId }, 'Login to save products to your wishlist.')) return
     if (isInWishlist(productId)) {
@@ -93,7 +94,7 @@ export default function ProductsPage() {
       toast('Removed from wishlist')
     } else {
       addToWishlist(productId)
-      toast.success('Added to wishlist')
+      showWishlistToast(productName, router)
     }
   }
 
@@ -321,7 +322,7 @@ export default function ProductsPage() {
                         {/* Wishlist Button */}
                         <button
                           onClick={(e) => {
-                            handleWishlist(product.id, e)
+                            handleWishlist(product.id, product.name, e)
                           }}
                           className="absolute top-3 left-3 p-2 bg-white dark:bg-slate-900 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         >
