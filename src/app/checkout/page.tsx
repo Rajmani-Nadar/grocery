@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/store'
 import Link from 'next/link'
-import { AlertCircle, Loader2, CheckCircle, Home, Briefcase, MapPin } from 'lucide-react'
+import { AlertCircle, Banknote, CheckCircle, Home, Briefcase, Loader2, MapPin, WalletCards } from 'lucide-react'
 import type { Address, PaymentMethod } from '@/types'
 import toast from 'react-hot-toast'
 import { loadRazorpayScript } from '@/lib/razorpay'
@@ -27,13 +27,14 @@ declare global {
 }
 
 export default function CheckoutPage() {
+  type CheckoutPaymentChoice = 'ONLINE' | 'CASH_ON_DELIVERY'
   const { data: session } = useSession()
   const router = useRouter()
   const { items: cartItems, getTotal, clearCart } = useCart()
   const [mounted, setMounted] = useState(false)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI')
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentChoice | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -46,14 +47,18 @@ export default function CheckoutPage() {
     if (!mounted) return
 
     const savedPaymentMethod = sessionStorage.getItem('grocery-checkout-payment-method')
-    if (savedPaymentMethod) {
-      setPaymentMethod(savedPaymentMethod as PaymentMethod)
+    if (savedPaymentMethod === 'CASH_ON_DELIVERY') {
+      setPaymentMethod('CASH_ON_DELIVERY')
+    } else if (savedPaymentMethod) {
+      setPaymentMethod('ONLINE')
     }
   }, [mounted])
 
   useEffect(() => {
     if (mounted) {
-      sessionStorage.setItem('grocery-checkout-payment-method', paymentMethod)
+      if (paymentMethod) {
+        sessionStorage.setItem('grocery-checkout-payment-method', paymentMethod)
+      }
     }
   }, [mounted, paymentMethod])
 
@@ -112,8 +117,39 @@ export default function CheckoutPage() {
       return
     }
 
+    if (!paymentMethod) {
+      toast.error('Please select a payment method.')
+      return
+    }
+
     try {
       setIsSubmitting(true)
+
+      const onlinePaymentMethod: PaymentMethod = 'UPI'
+
+      if (paymentMethod === 'CASH_ON_DELIVERY') {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shippingAddressId: selectedAddressId,
+            paymentMethod: 'CASH_ON_DELIVERY',
+            items: cartItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.product?.discountPrice || item.product?.price || 0,
+            })),
+          }),
+        })
+        const data = await response.json()
+        if (!response.ok || !data.orderId) {
+          throw new Error(data.error || 'Failed to place COD order')
+        }
+        clearCart()
+        toast.success('Order placed successfully')
+        router.push(`/order-success/${data.orderId}`)
+        return
+      }
 
       await loadRazorpayScript()
 
@@ -122,7 +158,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shippingAddressId: selectedAddressId,
-          paymentMethod,
+          paymentMethod: onlinePaymentMethod,
           idempotencyKey,
           amount: Number(getTotal().toFixed(2)),
           items: cartItems.map((item) => ({
@@ -309,11 +345,26 @@ export default function CheckoutPage() {
               <h2 className="font-bold text-lg mb-6">Payment Method</h2>
               
               <div className="space-y-4 mb-6">
-                {(['UPI', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH_ON_DELIVERY'] as PaymentMethod[]).map((method) => (
+                {([
+                  {
+                    value: 'ONLINE' as const,
+                    title: 'UPI & Online Payment',
+                    subtitle: 'Google Pay • PhonePe • BHIM • Credit/Debit Cards • Wallets • Net Banking',
+                    caption: 'Secured by Razorpay',
+                    icon: <WalletCards className="h-6 w-6" aria-hidden="true" />,
+                  },
+                  {
+                    value: 'CASH_ON_DELIVERY' as const,
+                    title: 'Cash On Delivery',
+                    subtitle: 'Pay when your order is delivered.',
+                    caption: '',
+                    icon: <Banknote className="h-6 w-6" aria-hidden="true" />,
+                  },
+                ]).map((method) => (
                   <label
-                    key={method}
-                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition ${
-                      paymentMethod === method
+                    key={method.value}
+                    className={`flex items-start gap-4 p-5 border-2 rounded-xl cursor-pointer transition ${
+                      paymentMethod === method.value
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -321,28 +372,24 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="payment"
-                      value={method}
-                      checked={paymentMethod === method}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                      value={method.value}
+                      checked={paymentMethod === method.value}
+                      onChange={() => setPaymentMethod(method.value)}
+                      className="mt-1 h-5 w-5 accent-primary"
                     />
-                    <span className="font-medium">
-                      {method === 'UPI' && 'UPI'}
-                      {method === 'CREDIT_CARD' && 'Credit Card'}
-                      {method === 'DEBIT_CARD' && 'Debit Card'}
-                      {method === 'CASH_ON_DELIVERY' && 'Cash On Delivery'}
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${paymentMethod === method.value ? 'bg-primary text-white' : 'bg-slate-100 text-primary dark:bg-slate-800'}`}>
+                      {method.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">{method.title}</span>
+                      <span className="mt-1 block text-sm text-muted-foreground">{method.subtitle}</span>
+                      {method.caption && <span className="mt-2 block text-xs font-medium text-primary">{method.caption}</span>}
                     </span>
                   </label>
                 ))}
               </div>
 
-              {paymentMethod === 'CASH_ON_DELIVERY' && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg flex gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-900 dark:text-blue-100">
-                    Pay with cash when your order is delivered.
-                  </p>
-                </div>
-              )}
+              {paymentMethod === 'CASH_ON_DELIVERY' && <div className="flex gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20"><CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" /><p className="text-sm text-blue-900 dark:text-blue-100">Pay with cash when your order is delivered.</p></div>}
             </div>
           </div>
 

@@ -151,6 +151,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    if (paymentMethod === 'CASH_ON_DELIVERY') {
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          provider: 'cod',
+          paymentMethod: 'CASH_ON_DELIVERY',
+          status: 'PENDING',
+          amount: order.total,
+          currency: 'INR',
+        },
+      })
+    }
+
     // Update product stock
     for (const item of orderItems) {
       await prisma.product.update({
