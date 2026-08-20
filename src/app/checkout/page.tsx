@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/store'
 import Link from 'next/link'
-import { AlertCircle, Banknote, CheckCircle, Home, Briefcase, Loader2, MapPin, WalletCards } from 'lucide-react'
+import { AlertCircle, Banknote, CheckCircle, Home, Briefcase, Loader2, Mail, MapPin, Phone, WalletCards } from 'lucide-react'
 import type { Address, PaymentMethod } from '@/types'
 import toast from 'react-hot-toast'
 import { loadRazorpayScript } from '@/lib/razorpay'
@@ -33,6 +33,7 @@ export default function CheckoutPage() {
   const { items: cartItems, getTotal, clearCart } = useCart()
   const [mounted, setMounted] = useState(false)
   const [addresses, setAddresses] = useState<Address[]>([])
+  const [profileContact, setProfileContact] = useState({ name: '', phone: '', email: '' })
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentChoice | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState<string>('')
@@ -94,6 +95,11 @@ export default function CheckoutPage() {
       const response = await fetch('/api/auth/profile')
       if (!response.ok) throw new Error('Failed to fetch addresses')
       const data = await response.json()
+      setProfileContact({
+        name: data.name || session?.user?.name || 'Customer',
+        phone: data.phone || '',
+        email: data.email || session?.user?.email || '',
+      })
       const nextAddresses = (data.addresses || []) as Address[]
       setAddresses(nextAddresses)
 
@@ -184,7 +190,7 @@ export default function CheckoutPage() {
         prefill: {
           name: data.customer?.name || session?.user?.name || 'Customer',
           email: data.customer?.email || session?.user?.email || '',
-          contact: data.customer?.phone || selectedAddress?.phone || '',
+          contact: data.customer?.phone || profileContact.phone || '',
         },
         theme: { color: '#2563eb' },
         handler: async (paymentResponse: {
@@ -276,6 +282,14 @@ export default function CheckoutPage() {
             {/* Shipping Address */}
             <div className="p-6 bg-white dark:bg-slate-900 border border-border rounded-lg">
               <h2 className="font-bold text-lg mb-6">Shipping Address</h2>
+              <div className="mb-5 rounded-lg border border-border bg-slate-50 p-4 dark:bg-slate-800">
+                <p className="mb-2 text-sm font-semibold">Delivery To</p>
+                <p className="font-medium">{profileContact.name || session?.user?.name || 'Customer'}</p>
+                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {profileContact.phone && <p className="flex items-center gap-2"><Phone size={14} />{profileContact.phone}</p>}
+                  {profileContact.email && <p className="flex items-center gap-2"><Mail size={14} />{profileContact.email}</p>}
+                </div>
+              </div>
               
               {isLoading ? (
                 <div className="flex justify-center py-8">
@@ -317,7 +331,6 @@ export default function CheckoutPage() {
                           <span className="text-xs bg-primary text-white px-2 py-0.5 rounded">Default</span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">{address.phone}</p>
                       <p className="text-sm">
                         {address.addressLine1}
                         {address.addressLine2 && `, ${address.addressLine2}`}

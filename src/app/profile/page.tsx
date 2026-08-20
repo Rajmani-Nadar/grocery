@@ -161,7 +161,7 @@ function ProfileContent() {
   }
 
   const handleSaveAddress = async () => {
-    if (!newAddress.fullName || !newAddress.phone || !newAddress.email || !newAddress.addressLine1 || !newAddress.city || !newAddress.state || !newAddress.postalCode) {
+    if (!newAddress.fullName || !newAddress.addressLine1 || !newAddress.city || !newAddress.state || !newAddress.postalCode) {
       setMessage({ type: 'error', text: 'Please fill in all required fields' })
       return
     }
@@ -174,7 +174,17 @@ function ProfileContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...(isNewAddress ? {} : { id: editingAddressId }),
-          ...newAddress,
+          fullName: newAddress.fullName,
+          addressLine1: newAddress.addressLine1,
+          addressLine2: newAddress.addressLine2,
+          city: newAddress.city,
+          state: newAddress.state,
+          postalCode: newAddress.postalCode,
+          country: newAddress.country,
+          type: newAddress.type,
+          isDefault: newAddress.isDefault,
+          // The legacy address API requires these values; source them from the profile, not user input.
+          ...(isNewAddress ? { phone: profile?.phone, email: profile?.email } : {}),
         }),
       })
 
@@ -423,10 +433,6 @@ function ProfileContent() {
                                 </span>
                               )}
                             </h3>
-                            <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                              <Phone size={14} />
-                              {address.phone}
-                            </p>
                             <p className="text-sm text-muted-foreground flex items-center gap-2">
                               <MapPin size={14} />
                               {address.addressLine1}
@@ -494,27 +500,6 @@ function ProfileContent() {
                           placeholder="Full name"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Phone *</label>
-                        <Input
-                          type="tel"
-                          name="phone"
-                          value={newAddress.phone || ''}
-                          onChange={handleAddressChange}
-                          placeholder="Phone number"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Email *</label>
-                      <Input
-                        type="email"
-                        name="email"
-                        value={newAddress.email || ''}
-                        onChange={handleAddressChange}
-                        placeholder="Email address"
-                      />
                     </div>
 
                     <div className="space-y-2">
