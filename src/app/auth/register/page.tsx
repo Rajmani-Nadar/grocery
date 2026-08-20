@@ -78,7 +78,7 @@ export default function RegisterPage() {
             email: formData.email,
             password: formData.password,
             redirect: true,
-            callbackUrl: '/dashboard',
+            callbackUrl: new URLSearchParams(window.location.search).get('callbackUrl') || '/dashboard',
           })
         }, 2000)
       }

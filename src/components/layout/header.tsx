@@ -94,7 +94,7 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             {/* Wishlist (mobile) */}
-            <Link href={session?.user ? '/wishlist' : '/auth/login'}>
+            <Link href={session?.user ? '/wishlist' : '/auth/login?callbackUrl=%2Fwishlist'}>
               <Button variant="ghost" size="icon" className="relative p-2">
                 <Heart size={20} />
                 {mounted && (
@@ -106,7 +106,7 @@ export function Header() {
             </Link>
 
             {/* Cart (mobile) */}
-            <Link href={session?.user ? '/cart' : '/auth/login'}>
+            <Link href={session?.user ? '/cart' : '/auth/login?callbackUrl=%2Fcart'}>
               <Button variant="ghost" size="icon" className="relative p-2">
                 <ShoppingCart size={20} />
                 {mounted && (
@@ -185,7 +185,7 @@ export function Header() {
 
             {/* Wishlist */}
             <Tooltip content="Wishlist" position="bottom">
-              <Link href={session?.user ? '/wishlist' : '/auth/login'}>
+              <Link href={session?.user ? '/wishlist' : '/auth/login?callbackUrl=%2Fwishlist'}>
                 <Button variant="ghost" size="icon" className="relative">
                   <Heart size={20} />
                   {mounted && (
@@ -199,7 +199,7 @@ export function Header() {
 
             {/* Cart */}
             <Tooltip content="Shopping Cart" position="bottom">
-              <Link href={session?.user ? '/cart' : '/auth/login'}>
+              <Link href={session?.user ? '/cart' : '/auth/login?callbackUrl=%2Fcart'}>
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingCart size={20} />
                   {mounted && (
@@ -239,7 +239,7 @@ export function Header() {
                 </Tooltip>
               </div>
             ) : (
-              <Link href="/auth/login">
+              <Link href="/auth/login?callbackUrl=%2Fdashboard">
                 <Button size="sm" variant="default">
                   <LogIn size={18} className="mr-2" />
                   Login
@@ -331,7 +331,7 @@ export function Header() {
                   </Button>
                 </>
               ) : (
-                <Link href="/auth/login" onClick={() => setIsMenuOpen(false)} className="block">
+                <Link href="/auth/login?callbackUrl=%2Fdashboard" onClick={() => setIsMenuOpen(false)} className="block">
                   <Button className="w-full">Login</Button>
                 </Link>
               )}

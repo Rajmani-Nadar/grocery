@@ -5,6 +5,7 @@ import { SessionProvider, useSession } from 'next-auth/react'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { useTheme, useCart, useWishlist } from '@/store'
+import { AuthGateProvider } from '@/components/auth/auth-gate'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,10 +26,10 @@ function SessionSyncProvider({ children }: { children: ReactNode }) {
     if (session?.user) {
       // User logged in - load their saved cart and wishlist
       const userId = session.user.email || session.user.id || 'anonymous'
-      setCartUserId(userId)
-      setWishlistUserId(userId)
       loadCartFromStorage(userId)
       loadWishlistFromStorage(userId)
+      setCartUserId(userId)
+      setWishlistUserId(userId)
     } else {
       // User logged out - save current cart/wishlist and clear
       saveCartToStorage()
@@ -59,7 +60,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <SessionProvider>
       <SessionSyncProvider>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <AuthGateProvider>{children}</AuthGateProvider>
           <Toaster
             position="top-right"
             toastOptions={{

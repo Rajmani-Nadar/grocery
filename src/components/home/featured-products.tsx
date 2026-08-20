@@ -11,6 +11,8 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCart, useWishlist } from '@/store'
+import { useSession } from 'next-auth/react'
+import { useAuthGate } from '@/components/auth/auth-gate'
 import { Heart, ShoppingCart, Star } from 'lucide-react'
 import { formatCurrency } from '@/utils'
 import type { Product } from '@/types'
@@ -25,6 +27,8 @@ export function FeaturedProducts() {
   })
 
   const products = response?.products || []
+  const { data: session } = useSession()
+  const { requireAuth } = useAuthGate()
   const { addItem } = useCart()
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist()
 
@@ -48,12 +52,14 @@ export function FeaturedProducts() {
 
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault()
+    if (!session && !requireAuth({ type: 'cart', productId: product.id, quantity: 1 }, 'Login to add products to your cart.')) return
     addItem(product, 1)
     toast.success('Product added to cart')
   }
 
   const handleWishlist = (productId: string, e: React.MouseEvent) => {
     e.preventDefault()
+    if (!session && !requireAuth({ type: 'wishlist', productId }, 'Login to save products to your wishlist.')) return
     if (isInWishlist(productId)) {
       removeFromWishlist(productId)
       toast('Removed from wishlist')

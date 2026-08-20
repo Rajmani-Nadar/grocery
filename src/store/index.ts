@@ -92,9 +92,16 @@ export const useCart = create<CartState>()(
 
       loadCartFromStorage: (userId: string) => {
         const saved = localStorage.getItem(`grocery-cart-${userId}`)
+        const guestItems = get().userId ? [] : get().items
         if (saved) {
           try {
-            const items = JSON.parse(saved)
+            const savedItems = JSON.parse(saved) as CartItem[]
+            const items = [...savedItems]
+            guestItems.forEach((guestItem) => {
+              const existingItem = items.find((item) => item.productId === guestItem.productId)
+              if (existingItem) existingItem.quantity += guestItem.quantity
+              else items.push(guestItem)
+            })
             set({ items, userId })
           } catch (e) {
             console.error('Failed to load cart from storage:', e)
@@ -166,16 +173,18 @@ export const useWishlist = create<WishlistState>()(
 
       loadWishlistFromStorage: (userId: string) => {
         const saved = localStorage.getItem(`grocery-wishlist-${userId}`)
+        const guestItems = get().userId ? [] : get().items
         if (saved) {
           try {
-            const items = JSON.parse(saved)
+            const savedItems = JSON.parse(saved) as string[]
+            const items = Array.from(new Set([...savedItems, ...guestItems]))
             set({ items, userId })
           } catch (e) {
             console.error('Failed to load wishlist from storage:', e)
             set({ items: [], userId })
           }
         } else {
-          set({ items: [], userId })
+          set({ items: guestItems, userId })
         }
       },
     }),

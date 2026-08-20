@@ -32,7 +32,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error || 'Failed to login')
       } else if (result?.ok) {
-        router.push('/dashboard')
+        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl')
+        router.push(callbackUrl || '/dashboard')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')

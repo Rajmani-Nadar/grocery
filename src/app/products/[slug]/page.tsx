@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useCart } from '@/store'
 import { useWishlist } from '@/store'
+import { useSession } from 'next-auth/react'
+import { useAuthGate } from '@/components/auth/auth-gate'
 
 interface Product {
   id: string
@@ -44,6 +46,8 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
+  const { data: session } = useSession()
+  const { requireAuth } = useAuthGate()
   const [quantity, setQuantity] = useState(1)
   const [addedToCart, setAddedToCart] = useState(false)
   const [selectedImage, setSelectedImage] = useState(0)
@@ -77,6 +81,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (product) {
+      if (!session && !requireAuth({ type: 'cart', productId: product.id, quantity }, 'Login to add products to your cart.')) return
       addItem(product as any, quantity)
       setAddedToCart(true)
       toast.success('Product added to cart')
@@ -93,6 +98,7 @@ export default function ProductDetailPage() {
 
   const toggleWishlist = () => {
     if (product) {
+      if (!session && !requireAuth({ type: 'wishlist', productId: product.id }, 'Login to save products to your wishlist.')) return
       if (isInWishlist(product.id)) {
         removeFromWishlist(product.id)
         toast('Removed from wishlist')
