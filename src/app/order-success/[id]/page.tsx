@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock3, Loader2, Truck } from 'lucide-react'
 import Link from 'next/link'
 import type { Order } from '@/types'
 import { RetryPaymentButton } from '@/components/payment/retry-payment-button'
@@ -40,12 +40,6 @@ export default function OrderSuccessPage() {
       fetchOrder()
     }
   }, [mounted, orderId])
-
-  useEffect(() => {
-    if (mounted && order) {
-      // Celebration overlay is rendered after the order loads
-    }
-  }, [order, mounted])
 
   const fetchOrder = async () => {
     try {
@@ -91,17 +85,57 @@ export default function OrderSuccessPage() {
     )
   }
 
+  const isCashOnDelivery = order.paymentMethod === 'CASH_ON_DELIVERY'
+  const isPaymentPending = order.paymentMethod === 'UPI' && order.paymentStatus === 'PENDING'
+  const isPaymentFailed = order.paymentStatus === 'FAILED'
+  const isPaymentSuccessful = order.paymentStatus === 'PAID'
+  const shouldShowRetry = isPaymentPending
+
+  const state = isCashOnDelivery
+    ? {
+        title: 'Order Confirmed (Cash on Delivery)',
+        subtitle: 'Your order has been placed successfully. Pay when it is delivered.',
+        icon: <Truck className="h-16 w-16 text-green-500" />,
+        badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        badgeText: 'Cash on Delivery',
+      }
+    : isPaymentPending
+      ? {
+          title: 'Payment Pending',
+          subtitle: 'Your order has been created but payment is pending. Complete your payment to confirm this order.',
+          icon: <Clock3 className="h-16 w-16 text-amber-500" />,
+          badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+          badgeText: 'Pending',
+        }
+      : isPaymentFailed
+        ? {
+            title: 'Payment Failed',
+            subtitle: 'Your order is waiting for payment. Please try again.',
+            icon: <AlertTriangle className="h-16 w-16 text-red-500" />,
+            badgeClass: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+            badgeText: 'Failed',
+          }
+        : {
+            title: 'Order Confirmed!',
+            subtitle: isPaymentSuccessful
+              ? 'Your payment was successful and your order has been confirmed.'
+              : 'Your order status has been updated.',
+            icon: <CheckCircle className="h-16 w-16 text-green-500" />,
+            badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+            badgeText: order.paymentStatus,
+          }
+
   return (
     <main className="min-h-screen py-12 bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
       <div className="container-custom max-w-xl">
-        {order ? <OrderCelebration /> : null}
+        {isPaymentSuccessful ? <OrderCelebration /> : null}
         {/* Success Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-green-500 animate-bounce" />
+            <div className={isPaymentSuccessful ? 'animate-bounce' : ''}>{state.icon}</div>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
-          <p className="text-muted-foreground">Your order has been successfully placed</p>
+          <h1 className="text-3xl font-bold mb-2">{state.title}</h1>
+          <p className="text-muted-foreground">{state.subtitle}</p>
         </div>
 
         {/* Essential Order Info */}
@@ -124,7 +158,7 @@ export default function OrderSuccessPage() {
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground mb-1">Status</p>
-              <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-semibold rounded">
+              <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${state.badgeClass}`}>
                 {order.orderStatus}
               </span>
             </div>
@@ -132,9 +166,11 @@ export default function OrderSuccessPage() {
           <div className="flex items-center justify-between gap-4 pt-4 mt-4 border-t border-border">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Payment Status</p>
-              <p className="font-semibold">{order.paymentStatus}</p>
+              <span className={`inline-block rounded px-2 py-1 text-sm font-semibold ${state.badgeClass}`}>
+                {state.badgeText}
+              </span>
             </div>
-            {order.paymentStatus === 'PENDING' && order.orderStatus === 'PENDING' && (
+            {shouldShowRetry && (
               <RetryPaymentButton orderId={order.id} onSuccess={fetchOrder} />
             )}
           </div>
