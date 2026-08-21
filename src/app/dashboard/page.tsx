@@ -154,6 +154,10 @@ export default async function DashboardPage() {
                     <span className="flex items-center gap-2"><Tag className="h-4 w-4 text-primary" /> Manage Categories</span>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </Link>
+                  <Link href="/admin/customers" className="group flex items-center justify-between rounded-lg border border-border p-3 transition-all hover:-translate-y-0.5 hover:border-green-400 hover:bg-green-50 dark:hover:border-green-600 dark:hover:bg-green-900/20">
+                    <span className="flex items-center gap-2"><Users className="h-4 w-4 text-green-600 dark:text-green-400" /> Manage Customers</span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-green-600 dark:group-hover:text-green-400" />
+                  </Link>
                 </div>
               </div>
 

@@ -187,6 +187,9 @@ export default async function AdminCustomersPage() {
   const searchScript = `
     (() => {
       const pageSize = 10;
+      let selectedCustomer = null;
+      let isDrawerOpen = false;
+      let previouslyFocusedElement = null;
       const rows = Array.from(document.querySelectorAll('[data-customer-row]'));
       const searchInput = document.getElementById('customer-search');
       const prevButton = document.getElementById('customer-prev');
@@ -194,7 +197,6 @@ export default async function AdminCustomersPage() {
       const pageInfo = document.getElementById('customer-page-info');
       const detailPanel = document.getElementById('customer-detail-panel');
       const detailClose = document.querySelectorAll('[data-customer-detail-close]');
-      const detailButtons = Array.from(document.querySelectorAll('[data-customer-detail]'));
       const allCustomers = rows.map((row) => ({
         row,
         name: (row.dataset.name || '').toLowerCase(),
@@ -252,39 +254,52 @@ export default async function AdminCustomersPage() {
         render();
       });
 
-      detailButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          const id = button.dataset.customerDetail;
-          const panel = document.getElementById('customer-detail-' + id);
-          if (panel) {
-            detailPanel?.classList.remove('pointer-events-none', 'opacity-0');
-            detailPanel?.classList.add('opacity-100');
-            detailPanel?.setAttribute('aria-hidden', 'false');
-            detailPanel && (detailPanel.style.opacity = '1');
-            const dialog = panel.closest('[role="dialog"]');
-            dialog?.classList.remove('translate-x-full');
-            dialog && ((dialog as HTMLElement).style.transform = 'translateX(0)');
-            document.body.classList.add('overflow-hidden');
-            document.querySelectorAll('[data-detail-panel]').forEach((node) => {
-              node.classList.add('hidden');
-            });
-            panel.classList.remove('hidden');
-            panel.querySelector('button')?.focus();
-          }
+      function openDetails(id, trigger) {
+        const panel = document.getElementById('customer-detail-' + id);
+        if (!panel || !detailPanel) return;
+
+        selectedCustomer = id;
+        isDrawerOpen = true;
+        previouslyFocusedElement = trigger;
+        detailPanel.classList.remove('pointer-events-none', 'opacity-0');
+        detailPanel.classList.add('opacity-100');
+        detailPanel.setAttribute('aria-hidden', 'false');
+        detailPanel.style.opacity = '1';
+        const dialog = panel.closest('[role="dialog"]');
+        dialog?.classList.remove('translate-x-full');
+        dialog && (dialog.style.transform = 'translateX(0)');
+        document.body.classList.add('overflow-hidden');
+        document.querySelectorAll('[data-detail-panel]').forEach((node) => {
+          node.classList.add('hidden');
         });
-      });
+        panel.classList.remove('hidden');
+        panel.querySelector('button')?.focus();
+      }
 
       function closeDetails() {
+        if (!isDrawerOpen) return;
+        isDrawerOpen = false;
+        selectedCustomer = null;
         detailPanel?.classList.remove('opacity-100');
         detailPanel?.classList.add('pointer-events-none', 'opacity-0');
         detailPanel?.setAttribute('aria-hidden', 'true');
         detailPanel && (detailPanel.style.opacity = '0');
         const dialog = detailPanel?.querySelector('[role="dialog"]');
         dialog?.classList.add('translate-x-full');
-        dialog && ((dialog as HTMLElement).style.transform = 'translateX(100%)');
+        dialog && (dialog.style.transform = 'translateX(100%)');
         document.body.classList.remove('overflow-hidden');
+        previouslyFocusedElement?.focus();
+        previouslyFocusedElement = null;
       }
 
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const detailButton = target.closest('[data-customer-detail]');
+        if (detailButton) {
+          openDetails(detailButton.dataset.customerDetail, detailButton);
+        }
+      });
       detailClose.forEach((button) => button.addEventListener('click', closeDetails));
       detailPanel?.addEventListener('click', (event) => {
         if (event.target === detailPanel) closeDetails();
