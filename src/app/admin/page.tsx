@@ -320,9 +320,9 @@ export default async function AdminDashboardPage() {
           </Link>
 
           <Link href="/admin/customers">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-lg p-6 hover:border-green-400 dark:hover:border-green-600 hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
               <div className="flex items-center gap-4">
-                <div className="bg-purple-600 p-3 rounded-lg">
+                <div className="bg-green-600 p-3 rounded-lg">
                   <Users className="text-white" size={24} />
                 </div>
                 <div>

@@ -193,7 +193,7 @@ export default async function AdminCustomersPage() {
       const nextButton = document.getElementById('customer-next');
       const pageInfo = document.getElementById('customer-page-info');
       const detailPanel = document.getElementById('customer-detail-panel');
-      const detailClose = document.getElementById('customer-detail-close');
+      const detailClose = document.querySelectorAll('[data-customer-detail-close]');
       const detailButtons = Array.from(document.querySelectorAll('[data-customer-detail]'));
       const allCustomers = rows.map((row) => ({
         row,
@@ -236,7 +236,7 @@ export default async function AdminCustomersPage() {
         applyPagination(filtered.map((item) => item));
 
         const rowsVisible = filtered.length > 0 ? filtered.length : 0;
-        const emptyState = document.getElementById('customer-empty-state');
+        const emptyState = document.getElementById('customer-empty-state') || document.getElementById('customer-filter-empty-state');
         if (emptyState) emptyState.style.display = rowsVisible === 0 ? '' : 'none';
       }
 
@@ -257,17 +257,40 @@ export default async function AdminCustomersPage() {
           const id = button.dataset.customerDetail;
           const panel = document.getElementById('customer-detail-' + id);
           if (panel) {
-            detailPanel?.classList.remove('hidden');
+            detailPanel?.classList.remove('pointer-events-none', 'opacity-0');
+            detailPanel?.classList.add('opacity-100');
+            detailPanel?.setAttribute('aria-hidden', 'false');
+            detailPanel && (detailPanel.style.opacity = '1');
+            const dialog = panel.closest('[role="dialog"]');
+            dialog?.classList.remove('translate-x-full');
+            dialog && ((dialog as HTMLElement).style.transform = 'translateX(0)');
+            document.body.classList.add('overflow-hidden');
             document.querySelectorAll('[data-detail-panel]').forEach((node) => {
               node.classList.add('hidden');
             });
             panel.classList.remove('hidden');
+            panel.querySelector('button')?.focus();
           }
         });
       });
 
-      detailClose?.addEventListener('click', () => {
-        detailPanel?.classList.add('hidden');
+      function closeDetails() {
+        detailPanel?.classList.remove('opacity-100');
+        detailPanel?.classList.add('pointer-events-none', 'opacity-0');
+        detailPanel?.setAttribute('aria-hidden', 'true');
+        detailPanel && (detailPanel.style.opacity = '0');
+        const dialog = detailPanel?.querySelector('[role="dialog"]');
+        dialog?.classList.add('translate-x-full');
+        dialog && ((dialog as HTMLElement).style.transform = 'translateX(100%)');
+        document.body.classList.remove('overflow-hidden');
+      }
+
+      detailClose.forEach((button) => button.addEventListener('click', closeDetails));
+      detailPanel?.addEventListener('click', (event) => {
+        if (event.target === detailPanel) closeDetails();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeDetails();
       });
 
       document.body.dataset.currentPage = '1';
@@ -403,6 +426,18 @@ export default async function AdminCustomersPage() {
                     </td>
                   </tr>
                 )}
+                {customerData.length > 0 && (
+                  <tr id="customer-filter-empty-state" className="hidden">
+                    <td colSpan={8} className="px-4 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="rounded-full bg-slate-100 p-4 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                          <SearchX className="h-8 w-8" />
+                        </div>
+                        <p className="text-lg font-semibold text-foreground">No customers found.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -425,16 +460,16 @@ export default async function AdminCustomersPage() {
         </div>
       </div>
 
-      <div id="customer-detail-panel" className="fixed inset-0 z-50 hidden justify-end bg-slate-950/60">
-        <div className="flex h-full w-full max-w-2xl flex-col overflow-y-auto bg-white dark:bg-slate-900">
+      <div id="customer-detail-panel" role="presentation" className="pointer-events-none fixed inset-0 z-50 flex justify-end bg-slate-950/60 opacity-0 transition-opacity duration-200" aria-hidden="true">
+        <div role="dialog" aria-modal="true" aria-labelledby="customer-detail-title" className="flex h-full w-full max-w-2xl translate-x-full flex-col overflow-y-auto bg-white transition-transform duration-300 ease-out dark:bg-slate-900 sm:translate-x-0">
           {customerData.map((customer) => (
             <div key={customer.id} id={`customer-detail-${customer.id}`} data-detail-panel className="hidden h-full w-full">
               <div className="flex items-center justify-between border-b border-border px-6 py-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">Customer Details</h2>
+                  <h2 id="customer-detail-title" className="text-xl font-semibold text-foreground">Customer Details</h2>
                   <p className="text-sm text-muted-foreground">Account overview and order history</p>
                 </div>
-                <button id="customer-detail-close" type="button" className="rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:border-primary hover:text-primary">
+                <button data-customer-detail-close type="button" aria-label="Close customer details" className="rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:border-primary hover:text-primary">
                   Close
                 </button>
               </div>
