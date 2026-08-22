@@ -149,7 +149,7 @@ export default function AdminOrdersPage() {
   }
 
   return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] py-10">
+      <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] px-3 py-6 sm:px-4 sm:py-10">
       <div className="container-custom space-y-8">
         <section className="relative isolate overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-700 via-green-600 to-teal-700 p-7 text-white shadow-xl shadow-emerald-900/15 sm:p-9"><div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" /><div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><div className="mb-3 flex items-center gap-3"><span className="rounded-2xl bg-white/15 p-3"><Package className="h-6 w-6" /></span><span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">Operations</span></div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Orders Management</h1><p className="mt-2 text-sm text-emerald-50">Manage and track every customer order from one focused workspace.</p></div><div className="flex flex-wrap gap-2 text-sm font-medium"><span className="rounded-full border border-white/20 bg-white/15 px-4 py-2">{orders.length} total orders</span><span className="rounded-full border border-amber-200/30 bg-amber-400/20 px-4 py-2 text-amber-50">{pendingOrders} pending</span></div></div></section>
 
@@ -233,18 +233,18 @@ export default function AdminOrdersPage() {
                 whileHover={{ y: -2 }}
                 className="overflow-hidden rounded-3xl border border-border/70 bg-white/90 shadow-xl shadow-slate-200/40 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20"
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-2">
+                <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
+                  <div className="flex flex-col items-start justify-between gap-3 mb-2 sm:flex-row sm:items-center">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white shadow-md">{(order.user?.name || 'Customer').split(' ').map((part) => part[0]).slice(0, 2).join('')}</div>
-                      <div>
-                      <CardTitle className="text-base">{order.orderNumber}</CardTitle>
-                      <CardDescription>
+                      <div className="min-w-0">
+                      <CardTitle className="break-words text-base">{order.orderNumber}</CardTitle>
+                      <CardDescription className="break-words">
                         {order.user?.name} ({order.user?.email})
                       </CardDescription>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex w-full items-start justify-between gap-3 text-left sm:w-auto sm:block sm:text-right">
                       <p className="font-bold text-lg">₹{order.total.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -254,7 +254,7 @@ export default function AdminOrdersPage() {
                   </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                   <div className="mb-4 grid gap-4 rounded-2xl border border-border/60 bg-slate-50/80 p-4 md:grid-cols-4 dark:bg-slate-800/70">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Order Status</p>
@@ -327,9 +327,9 @@ export default function AdminOrdersPage() {
                         <h4 className="font-semibold mb-2">Items</h4>
                         <div className="space-y-2">
                           {order.items.map((item) => (
-                            <div key={item.id} className="flex justify-between text-sm">
-                              <span>{item.product?.name}</span>
-                              <span className="text-muted-foreground">
+                            <div key={item.id} className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between">
+                              <span className="break-words">{item.product?.name}</span>
+                              <span className="text-muted-foreground sm:text-right">
                                 x{item.quantity} @ ₹{item.price.toFixed(2)} = ₹{item.total.toFixed(2)}
                               </span>
                             </div>
@@ -380,7 +380,7 @@ export default function AdminOrdersPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 mt-4">
-                    <Link href={`/api/orders/${order.id}`}>
+                    <Link href={`/order-success/${order.id}`}>
                       <Button variant="outline" size="sm">
                         <Eye className="w-4 h-4 mr-2" />
                         View

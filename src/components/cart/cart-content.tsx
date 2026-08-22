@@ -28,20 +28,20 @@ export function CartContent() {
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-8">
+    <div className="grid min-w-0 gap-6 md:grid-cols-3 md:gap-8">
       {/* Cart Items */}
-      <div className="md:col-span-2 space-y-4">
+      <div className="min-w-0 space-y-4 md:col-span-2">
         {items.map((item) => (
-          <Card key={item.id}>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="text-4xl">{item.product?.name.charAt(0)}</div>
-              <div className="flex-1">
-                <h3 className="font-bold">{item.product?.name}</h3>
+          <Card key={item.id} className="min-w-0 overflow-hidden">
+            <CardContent className="flex min-w-0 flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4">
+              <div className="shrink-0 text-4xl">{item.product?.name.charAt(0)}</div>
+              <div className="min-w-0 flex-1 basis-[calc(100%-3.5rem)] sm:basis-auto">
+                <h3 className="truncate font-bold">{item.product?.name}</h3>
                 <p className="text-muted-foreground text-sm">
                   {formatCurrency(item.product?.discountPrice || item.product?.price || 0)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
                 <button
                   onClick={() =>
                     updateQuantity(item.productId, Math.max(1, item.quantity - 1))
@@ -50,7 +50,7 @@ export function CartContent() {
                 >
                   −
                 </button>
-                <span className="px-4">{item.quantity}</span>
+                <span className="px-2 sm:px-4">{item.quantity}</span>
                 <button
                   onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                   className="px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
@@ -63,7 +63,7 @@ export function CartContent() {
                   removeItem(item.productId)
                   toast.success('Item removed from cart')
                 }}
-                className="p-2 text-destructive hover:bg-red-50 dark:hover:bg-red-950 rounded"
+                className="shrink-0 rounded p-2 text-destructive hover:bg-red-50 dark:hover:bg-red-950"
               >
                 <Trash2 size={18} />
               </button>
@@ -73,34 +73,34 @@ export function CartContent() {
       </div>
 
       {/* Cart Summary */}
-      <div>
-        <Card>
-          <CardContent className="p-6 space-y-4">
+      <div className="min-w-0">
+        <Card className="min-w-0 overflow-hidden">
+          <CardContent className="space-y-4 p-4 sm:p-6">
             <div>
               <h3 className="font-bold text-lg mb-4">Order Summary</h3>
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+                <div className="flex min-w-0 justify-between gap-4 text-sm">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(getTotal())}</span>
+                  <span className="shrink-0">{formatCurrency(getTotal())}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex min-w-0 justify-between gap-4 text-sm">
                   <span>Shipping</span>
-                  <span>{getTotal() > 500 ? 'Free' : formatCurrency(50)}</span>
+                  <span className="shrink-0">{getTotal() > 500 ? 'Free' : formatCurrency(50)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex min-w-0 justify-between gap-4 text-sm">
                   <span>Tax</span>
-                  <span>{formatCurrency(Math.round(getTotal() * 0.05 * 100) / 100)}</span>
+                  <span className="shrink-0">{formatCurrency(Math.round(getTotal() * 0.05 * 100) / 100)}</span>
                 </div>
               </div>
             </div>
             <div className="border-t border-border pt-4">
-              <div className="flex justify-between font-bold text-lg">
+              <div className="flex min-w-0 justify-between gap-4 font-bold text-lg">
                 <span>Total</span>
-                <span>{formatCurrency(getTotal() * 1.05 + (getTotal() > 500 ? 0 : 50))}</span>
+                <span className="shrink-0">{formatCurrency(getTotal() * 1.05 + (getTotal() > 500 ? 0 : 50))}</span>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="p-6 pt-0 gap-2">
+          <CardFooter className="gap-2 p-4 pt-0 sm:p-6 sm:pt-0">
             <Link href="/checkout" className="flex-1">
               <Button className="w-full">Proceed to Checkout</Button>
             </Link>

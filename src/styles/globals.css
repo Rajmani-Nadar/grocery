@@ -119,6 +119,50 @@ html {
   @apply container mx-auto px-4 sm:px-6 lg:px-8;
 }
 
+@media (max-width: 639px) {
+  .admin-dashboard-layout > div > div[class*="lg:grid-cols-[1.35fr_0.65fr]"] > section:first-child,
+  .admin-dashboard-layout > div > div[class*="lg:grid-cols-[1.35fr_0.65fr]"] > div > section {
+    padding: 1rem;
+  }
+
+  .admin-dashboard-layout > div > div[class*="lg:grid-cols-[1.35fr_0.65fr]"] > section:first-child > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-dashboard-layout [class*="group flex items-center justify-between gap-4"] {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-dashboard-layout [class*="group flex items-center justify-between gap-4"] > [class*="shrink-0 text-right"] {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    text-align: left;
+    width: 100%;
+  }
+
+  .admin-dashboard-layout [class*="mb-2 flex items-center justify-between"] {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-categories-layout [class*="flex items-center justify-between rounded-2xl border"] {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-categories-layout [class*="flex items-center justify-between rounded-2xl border"] > div:last-child {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
+
 .text-truncate {
   @apply truncate;
 }

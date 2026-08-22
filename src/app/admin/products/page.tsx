@@ -153,7 +153,7 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] px-4 py-10 dark:bg-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] px-3 py-6 sm:px-4 sm:py-10 dark:bg-slate-950">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
         <section className="relative z-30 isolate mb-8 overflow-visible rounded-[2rem] bg-gradient-to-br from-emerald-700 via-green-600 to-teal-700 p-7 text-white shadow-xl shadow-emerald-900/15 sm:p-9"><div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" /><div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -162,16 +162,16 @@ export default function AdminProductsPage() {
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Products</h1>
             <p className="mt-2 text-sm text-emerald-50">Manage your product catalog and keep availability clear at a glance.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
             <Link href="/admin/categories">
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="w-full gap-2 sm:w-auto">
                 <Tags className="w-4 h-4" />
                 Categories
               </Button>
             </Link>
             <div className="relative">
               <Button 
-                className="gap-2 !bg-white !text-emerald-700 shadow-lg hover:!bg-emerald-50 hover:!text-emerald-700"
+                className="w-full gap-2 !bg-white !text-emerald-700 shadow-lg hover:!bg-emerald-50 hover:!text-emerald-700 sm:w-auto"
                 onClick={() => setShowAddMenu(!showAddMenu)}
               >
                 <Plus className="w-4 h-4" />
