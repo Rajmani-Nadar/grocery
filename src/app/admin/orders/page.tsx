@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,13 @@ import {
   Loader2,
   Search,
   Eye,
+  Package,
+  DollarSign,
+  CreditCard,
+  Banknote,
+  CheckCircle2,
+  Clock3,
+  XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import type { Order } from '@/types'
@@ -109,7 +117,11 @@ export default function AdminOrdersPage() {
         order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchesStatus = filterStatus === 'ALL' || order.orderStatus === filterStatus
+      const matchesStatus = filterStatus === 'ALL' ||
+        order.orderStatus === filterStatus ||
+        (filterStatus === 'PAID' && ['PAID', 'COMPLETED', 'CAPTURED'].includes(order.paymentStatus)) ||
+        (filterStatus === 'FAILED' && ['FAILED', 'CANCELLED'].includes(order.paymentStatus)) ||
+        (filterStatus === 'COD' && order.paymentMethod === 'CASH_ON_DELIVERY')
 
       return matchesSearch && matchesStatus
     })
@@ -120,6 +132,11 @@ export default function AdminOrdersPage() {
         return b.total - a.total
       }
     })
+
+  const pendingOrders = orders.filter((order) => order.orderStatus === 'PENDING' || order.orderStatus === 'PROCESSING').length
+  const paidOrders = orders.filter((order) => ['PAID', 'COMPLETED', 'CAPTURED'].includes(order.paymentStatus)).length
+  const codOrders = orders.filter((order) => order.paymentMethod === 'CASH_ON_DELIVERY').length
+  const paidRevenue = orders.reduce((sum, order) => ['PAID', 'COMPLETED', 'CAPTURED'].includes(order.paymentStatus) ? sum + order.total : sum, 0)
 
   if (isLoading) {
     return (
@@ -132,15 +149,14 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <main className="min-h-screen py-12 bg-slate-50 dark:bg-slate-950">
-      <div className="container-custom">
-        <div className="mb-8">
-          <h1 className="text-h2 mb-2">Orders Management</h1>
-          <p className="text-muted-foreground">Manage and track all customer orders</p>
-        </div>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] py-10">
+      <div className="container-custom space-y-8">
+        <section className="relative isolate overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-700 via-green-600 to-teal-700 p-7 text-white shadow-xl shadow-emerald-900/15 sm:p-9"><div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" /><div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><div className="mb-3 flex items-center gap-3"><span className="rounded-2xl bg-white/15 p-3"><Package className="h-6 w-6" /></span><span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">Operations</span></div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Orders Management</h1><p className="mt-2 text-sm text-emerald-50">Manage and track every customer order from one focused workspace.</p></div><div className="flex flex-wrap gap-2 text-sm font-medium"><span className="rounded-full border border-white/20 bg-white/15 px-4 py-2">{orders.length} total orders</span><span className="rounded-full border border-amber-200/30 bg-amber-400/20 px-4 py-2 text-amber-50">{pendingOrders} pending</span></div></div></section>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{[{ label: 'Total Orders', value: orders.length, icon: Package, tone: 'from-emerald-50 to-white text-emerald-600 border-emerald-200' }, { label: 'Pending Orders', value: pendingOrders, icon: Clock3, tone: 'from-amber-50 to-white text-amber-600 border-amber-200' }, { label: 'Paid Orders', value: paidOrders, icon: CheckCircle2, tone: 'from-blue-50 to-white text-blue-600 border-blue-200' }, { label: 'COD Orders', value: codOrders, icon: Banknote, tone: 'from-violet-50 to-white text-violet-600 border-violet-200' }, { label: 'Paid Revenue', value: `₹${paidRevenue.toLocaleString('en-IN')}`, icon: DollarSign, tone: 'from-teal-50 to-white text-teal-600 border-teal-200' }].map(({ label, value, icon: Icon, tone }, index) => <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} whileHover={{ y: -4 }} className={`rounded-3xl border bg-gradient-to-br p-5 shadow-lg shadow-slate-200/50 dark:from-slate-900 dark:to-slate-800 dark:shadow-black/20 ${tone}`}><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-3 text-2xl font-bold text-foreground">{value}</p></div><Icon className="h-6 w-6" /></div></motion.div>)}</div>
 
         {/* Filters */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+        <div className="grid gap-4 rounded-3xl border border-border/70 bg-white/85 p-5 shadow-xl shadow-slate-200/50 backdrop-blur md:grid-cols-4 dark:bg-slate-900/85 dark:shadow-black/20">
           <div>
             <label className="text-sm font-medium mb-2 block">Search</label>
             <div className="relative">
@@ -149,7 +165,7 @@ export default function AdminOrdersPage() {
                 placeholder="Order # or customer"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="rounded-full pl-9 focus-visible:ring-emerald-500"
               />
             </div>
           </div>
@@ -159,10 +175,13 @@ export default function AdminOrdersPage() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md dark:bg-slate-900"
+              className="w-full rounded-full border border-border bg-background px-3 py-2 dark:bg-slate-900"
             >
               <option value="ALL">All Orders</option>
               <option value="PENDING">Pending</option>
+              <option value="PAID">Paid</option>
+              <option value="FAILED">Failed</option>
+              <option value="COD">COD</option>
               <option value="PROCESSING">Processing</option>
               <option value="CONFIRMED">Confirmed</option>
               <option value="PACKED">Packed</option>
@@ -178,7 +197,7 @@ export default function AdminOrdersPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'date' | 'amount')}
-              className="w-full px-3 py-2 border border-border rounded-md dark:bg-slate-900"
+              className="w-full rounded-full border border-border bg-background px-3 py-2 dark:bg-slate-900"
             >
               <option value="date">Newest First</option>
               <option value="amount">Highest Amount</option>
@@ -206,29 +225,37 @@ export default function AdminOrdersPage() {
         ) : (
           <div className="space-y-4">
             {filteredOrders.map((order) => (
-              <Card
+              <motion.div
                 key={order.id}
-                className="overflow-hidden hover:shadow-md transition"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                whileHover={{ y: -2 }}
+                className="overflow-hidden rounded-3xl border border-border/70 bg-white/90 shadow-xl shadow-slate-200/40 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white shadow-md">{(order.user?.name || 'Customer').split(' ').map((part) => part[0]).slice(0, 2).join('')}</div>
+                      <div>
                       <CardTitle className="text-base">{order.orderNumber}</CardTitle>
                       <CardDescription>
                         {order.user?.name} ({order.user?.email})
                       </CardDescription>
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg">₹{order.total.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </p>
+                      <div className="mt-2 flex flex-wrap justify-end gap-1"><span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-700">{order.paymentStatus}</span><span className="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-700">{order.orderStatus.replace(/_/g, ' ')}</span></div>
                     </div>
                   </div>
                 </CardHeader>
 
                 <CardContent>
-                  <div className="grid md:grid-cols-4 gap-4 mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded">
+                  <div className="mb-4 grid gap-4 rounded-2xl border border-border/60 bg-slate-50/80 p-4 md:grid-cols-4 dark:bg-slate-800/70">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Order Status</p>
                       <select
@@ -361,7 +388,7 @@ export default function AdminOrdersPage() {
                     </Link>
                   </div>
                 </CardContent>
-              </Card>
+              </motion.div>
             ))}
           </div>
         )}

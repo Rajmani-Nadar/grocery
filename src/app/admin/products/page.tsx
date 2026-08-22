@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Loader2, Edit2, Trash2, Plus, Search, ChevronLeft, ChevronRight, ChevronDown, Tags } from 'lucide-react'
+import { Loader2, Edit2, Trash2, Plus, Search, ChevronLeft, ChevronRight, ChevronDown, Tags, Package, Boxes, AlertTriangle, CheckCircle2, X, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Product } from '@/types'
 
@@ -134,9 +135,14 @@ export default function AdminProductsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const totalProducts = pagination?.total || 0
+  const activeProducts = products.filter((product) => product.isActive).length
+  const outOfStock = products.filter((product) => product.stock === 0).length
+  const lowStock = products.filter((product) => product.stock > 0 && product.stock <= 10).length
+
   if (isLoading || status === 'loading') {
     return (
-      <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] px-4 py-10 dark:bg-slate-950">
         <div className="container mx-auto max-w-7xl">
           <div className="flex items-center justify-center h-96">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -147,13 +153,14 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] px-4 py-10 dark:bg-slate-950">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <section className="relative z-30 isolate mb-8 overflow-visible rounded-[2rem] bg-gradient-to-br from-emerald-700 via-green-600 to-teal-700 p-7 text-white shadow-xl shadow-emerald-900/15 sm:p-9"><div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" /><div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Products</h1>
-            <p className="text-muted-foreground mt-1">Manage your product catalog</p>
+            <div className="mb-3 flex items-center gap-3"><span className="rounded-2xl bg-white/15 p-3"><Package className="h-6 w-6" /></span><span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">Catalog</span></div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Products</h1>
+            <p className="mt-2 text-sm text-emerald-50">Manage your product catalog and keep availability clear at a glance.</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/admin/categories">
@@ -164,7 +171,7 @@ export default function AdminProductsPage() {
             </Link>
             <div className="relative">
               <Button 
-                className="gap-2"
+                className="gap-2 !bg-white !text-emerald-700 shadow-lg hover:!bg-emerald-50 hover:!text-emerald-700"
                 onClick={() => setShowAddMenu(!showAddMenu)}
               >
                 <Plus className="w-4 h-4" />
@@ -174,14 +181,14 @@ export default function AdminProductsPage() {
               
               {/* Dropdown Menu */}
               {showAddMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-border rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-border bg-white text-foreground shadow-2xl dark:bg-slate-800">
                   <Link href="/admin/products/new">
                     <button
                       onClick={() => setShowAddMenu(false)}
                       className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-lg first:rounded-t-lg"
                     >
-                      <p className="font-medium text-foreground">Single Product</p>
-                      <p className="text-sm text-muted-foreground">Add one product at a time</p>
+                      <p className="font-medium !text-slate-900 dark:!text-slate-100">Single Product</p>
+                      <p className="text-sm !text-slate-500 dark:!text-slate-400">Add one product at a time</p>
                     </button>
                   </Link>
                   <Link href="/admin/products/bulk">
@@ -189,32 +196,33 @@ export default function AdminProductsPage() {
                       onClick={() => setShowAddMenu(false)}
                       className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-b-lg border-t border-border"
                     >
-                      <p className="font-medium text-foreground">Bulk Products</p>
-                      <p className="text-sm text-muted-foreground">Upload multiple products via Excel</p>
+                      <p className="font-medium !text-slate-900 dark:!text-slate-100">Bulk Products</p>
+                      <p className="text-sm !text-slate-500 dark:!text-slate-400">Upload multiple products via Excel</p>
                     </button>
                   </Link>
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </div><span className="absolute right-7 top-7 hidden rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm font-medium sm:block">{totalProducts} total products</span>
+        </div></section>
+
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{ label: 'Total Products', value: totalProducts, icon: Boxes }, { label: 'Active Products', value: activeProducts, icon: CheckCircle2 }, { label: 'Out of Stock', value: outOfStock, icon: X }, { label: 'Low Stock', value: lowStock, icon: AlertTriangle }].map(({ label, value, icon: Icon }, index) => <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }} whileHover={{ y: -4 }} className="rounded-3xl border border-border/70 bg-white/90 p-5 shadow-lg shadow-slate-200/50 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20"><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-3 text-3xl font-bold tracking-tight text-foreground">{value}</p></div><Icon className="h-6 w-6 text-emerald-600" /></div></motion.div>)}</div>
 
         {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
+        <div className="mb-6"><div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search by name or SKU..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-full border border-border bg-white py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-slate-800"
             />
           </div>
         </div>
 
         {/* Filters */}
-        <div className="mb-6 bg-white dark:bg-slate-800 border border-border rounded-lg p-4">
+        <div className="mb-6 rounded-3xl border border-border/70 bg-white/85 p-5 shadow-lg shadow-slate-200/40 backdrop-blur dark:bg-slate-900/85 dark:shadow-black/20">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Category Filter */}
             <div>
@@ -314,13 +322,13 @@ export default function AdminProductsPage() {
         </div>
 
         {/* Products Table */}
-        <div className="bg-white dark:bg-slate-800 border border-border rounded-lg overflow-hidden">
+        <div className="overflow-hidden rounded-3xl border border-border/70 bg-white/90 shadow-xl shadow-slate-200/50 dark:bg-slate-900/90 dark:shadow-black/20">
           {products.length > 0 ? (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border bg-slate-50 dark:bg-slate-700/50">
+                    <tr className="sticky top-0 z-10 border-b border-border bg-slate-50/95 dark:bg-slate-800/95">
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Name</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">SKU</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Category</th>
@@ -333,14 +341,14 @@ export default function AdminProductsPage() {
                   </thead>
                   <tbody>
                     {products.map((product) => (
-                      <tr key={product.id} className="border-b border-border hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                      <motion.tr key={product.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className="border-b border-border/70 even:bg-slate-50/50 hover:bg-emerald-50/50 dark:even:bg-slate-800/30 dark:hover:bg-emerald-950/20">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             {product.images && product.images.length > 0 && (
                               <img
                                 src={product.images[0]}
                                 alt={product.name}
-                                className="w-10 h-10 rounded object-cover"
+                                className="h-11 w-11 rounded-xl object-cover shadow-sm transition duration-300 hover:scale-110"
                               />
                             )}
                             <div>
@@ -350,7 +358,7 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">{product.sku}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
-                          {(product.category as any)?.name || 'N/A'}
+                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{(product.category as any)?.name || 'N/A'}</span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <p className="font-semibold text-foreground">₹{product.price}</p>
@@ -360,9 +368,7 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span
-                            className={`text-sm font-medium ${
-                              product.stock > 0 ? 'text-green-600' : 'text-red-600'
-                            }`}
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${product.stock === 0 ? 'bg-red-100 text-red-700' : product.stock <= 10 ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}
                           >
                             {product.stock}
                           </span>
@@ -419,7 +425,7 @@ export default function AdminProductsPage() {
                             </Button>
                           )}
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
                   </tbody>
                 </table>

@@ -8,6 +8,7 @@ interface BulkProductInput {
   sku: string
   description?: string
   categoryId: string
+  category?: string
   price: number
   discountPrice?: number | null
   discount?: number | null
@@ -40,32 +41,34 @@ export async function POST(request: NextRequest) {
     }
 
     const errors: Array<{ row: number; error: string; sku: string }> = []
-    const successProducts: BulkProductInput[] = []
+    const successProducts: Array<{ product: BulkProductInput; row: number }> = []
     let successCount = 0
+
+    const categories = await prisma.category.findMany({
+      select: { id: true, name: true },
+    })
+    const categoryIdsByName = new Map(
+      categories.map((category) => [category.name.trim().toLowerCase(), category.id])
+    )
+    const categoryIds = new Set(categories.map((category) => category.id))
 
     // Validate all products first
     for (let i = 0; i < products.length; i++) {
       const product = products[i]
       const rowNum = i + 2 // +2 because header is row 1
 
-      // Check if category exists
-      try {
-        const category = await prisma.category.findUnique({
-          where: { id: product.categoryId },
-        })
+      const categoryId = product.categoryId ? String(product.categoryId).trim() : ''
+      const categoryName = product.category ? String(product.category).trim() : ''
+      const resolvedCategoryId = categoryIds.has(categoryId)
+        ? categoryId
+        : (categoryName ? categoryIdsByName.get(categoryName.toLowerCase()) : undefined)
 
-        if (!category) {
-          errors.push({
-            row: rowNum,
-            error: `Category with ID "${product.categoryId}" not found`,
-            sku: product.sku,
-          })
-          continue
-        }
-      } catch (error) {
+      if (!resolvedCategoryId) {
         errors.push({
           row: rowNum,
-          error: `Invalid category ID: ${product.categoryId}`,
+          error: categoryName
+            ? `Category "${categoryName}" does not exist.`
+            : 'Category name is required.',
           sku: product.sku,
         })
         continue
@@ -85,11 +88,11 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      successProducts.push(product)
+      successProducts.push({ product: { ...product, categoryId: resolvedCategoryId }, row: rowNum })
     }
 
     // Create products in bulk
-    for (const product of successProducts) {
+    for (const { product, row } of successProducts) {
       try {
         // Generate slug from name
         const slug = product.name
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error(`Error creating product ${product.sku}:`, error)
         errors.push({
-          row: products.indexOf(product) + 2,
+          row,
           error: `Failed to create product: ${error instanceof Error ? error.message : 'Unknown error'}`,
           sku: product.sku,
         })

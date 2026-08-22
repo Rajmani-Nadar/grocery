@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Loader2, Pencil, Plus, Trash2, ArrowLeft } from 'lucide-react'
+import { Loader2, Pencil, Plus, Trash2, ArrowLeft, Grid2X2, Search, CheckCircle2, FolderOpen, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface CategoryItem {
@@ -31,6 +32,7 @@ export default function AdminCategoriesPage() {
   const [description, setDescription] = useState('')
   const [icon, setIcon] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -141,6 +143,11 @@ export default function AdminCategoriesPage() {
     }
   }
 
+  const filteredCategories = categories.filter((category) =>
+    category.name.toLowerCase().includes(searchQuery.toLowerCase()) || category.slug.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  const activeCategories = categories.filter((category) => category.isActive).length
+
   if (status === 'loading' || isLoading) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-8 dark:bg-slate-950">
@@ -152,25 +159,28 @@ export default function AdminCategoriesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex items-center justify-between">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.1),_transparent_30%)] px-4 py-10 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <section className="relative isolate overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-700 via-green-600 to-teal-700 p-7 text-white shadow-xl shadow-emerald-900/15 sm:p-9"><div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" /><div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Link href="/admin/products" className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+            <Link href="/admin/products" className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-emerald-100 hover:text-white">
               <ArrowLeft className="h-4 w-4" />
               Back to products
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">Categories</h1>
-            <p className="mt-1 text-muted-foreground">Create, edit, and remove product categories for your store.</p>
+            <div className="mb-3 flex items-center gap-3"><span className="rounded-2xl bg-white/15 p-3"><Grid2X2 className="h-6 w-6" /></span><span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">Catalog structure</span></div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Categories</h1>
+            <p className="mt-2 text-sm text-emerald-50">Create, edit, and remove product categories for your store.</p>
           </div>
-          <Button variant="outline" onClick={resetForm} className="gap-2">
+          <div className="flex flex-wrap items-center gap-3"><span className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm font-medium">{categories.length} total categories</span><Button variant="outline" onClick={resetForm} className="gap-2 !border-white/30 !bg-white !text-emerald-700 hover:!bg-emerald-50 hover:!text-emerald-700">
             <Plus className="h-4 w-4" />
             New Category
-          </Button>
-        </div>
+          </Button></div>
+        </div></section>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{ label: 'Total Categories', value: categories.length, icon: Grid2X2 }, { label: 'Active Categories', value: activeCategories, icon: CheckCircle2 }, { label: 'Products Assigned', value: 'Available in catalog', icon: FolderOpen }, { label: 'Empty Categories', value: categories.filter((category) => !category.description && !category.icon && !category.image).length, icon: X }].map(({ label, value, icon: Icon }, index) => <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }} whileHover={{ y: -4 }} className="rounded-3xl border border-border/70 bg-white/90 p-5 shadow-lg shadow-slate-200/50 dark:bg-slate-900/90 dark:shadow-black/20"><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-3 text-xl font-bold tracking-tight text-foreground">{value}</p></div><Icon className="h-6 w-6 text-emerald-600" /></div></motion.div>)}</div>
 
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900">
+          <div className="rounded-3xl border border-border/70 bg-white/90 p-6 shadow-xl shadow-slate-200/50 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20">
             <h2 className="text-xl font-semibold">{editingId ? 'Edit Category' : 'Add Category'}</h2>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
@@ -178,7 +188,7 @@ export default function AdminCategoriesPage() {
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2"
+                  className="w-full rounded-2xl border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   placeholder="Fresh Fruits"
                 />
               </div>
@@ -187,7 +197,7 @@ export default function AdminCategoriesPage() {
                 <input
                   value={slug}
                   onChange={(event) => setSlug(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2"
+                  className="w-full rounded-2xl border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   placeholder="fresh-fruits"
                 />
               </div>
@@ -196,7 +206,7 @@ export default function AdminCategoriesPage() {
                 <textarea
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2"
+                  className="min-h-24 w-full rounded-2xl border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   placeholder="Short description"
                 />
               </div>
@@ -205,7 +215,7 @@ export default function AdminCategoriesPage() {
                 <input
                   value={icon}
                   onChange={(event) => setIcon(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2"
+                  className="w-full rounded-2xl border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   placeholder="apple"
                 />
               </div>
@@ -231,22 +241,22 @@ export default function AdminCategoriesPage() {
             </form>
           </div>
 
-          <div className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900">
+          <div className="rounded-3xl border border-border/70 bg-white/90 p-6 shadow-xl shadow-slate-200/50 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20">
             <div className="mb-4 flex items-center justify-between">
-              <div>
+              <div className="relative mb-4"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search categories" aria-label="Search categories" className="w-full rounded-full border border-border bg-background py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500" /></div><div>
                 <h2 className="text-xl font-semibold">Category List</h2>
-                <p className="text-sm text-muted-foreground">{categories.length} total categories</p>
+                <p className="text-sm text-muted-foreground">{filteredCategories.length} matching categories</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              {categories.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              {filteredCategories.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-emerald-200 bg-emerald-50/40 p-10 text-center text-sm text-muted-foreground dark:border-emerald-900 dark:bg-emerald-950/20">
                   No categories yet. Create your first one to organize products.
                 </div>
               ) : (
-                categories.map((category) => (
-                  <div key={category.id} className="flex items-center justify-between rounded-xl border border-border bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                filteredCategories.map((category, index) => (
+                  <motion.div key={category.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} whileHover={{ y: -2 }} className="flex items-center justify-between rounded-2xl border border-border/70 bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
                     <div>
                       <p className="font-semibold">{category.name}</p>
                       <p className="text-sm text-muted-foreground">/{category.slug}</p>
@@ -264,7 +274,7 @@ export default function AdminCategoriesPage() {
                         Delete
                       </Button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))
               )}
             </div>

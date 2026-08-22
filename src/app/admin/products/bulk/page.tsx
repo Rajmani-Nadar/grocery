@@ -15,6 +15,7 @@ export default function BulkProductsPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadResult, setUploadResult] = useState<{
+    total: number
     success: number
     failed: number
     errors: Array<{ row: number; error: string }>
@@ -43,7 +44,7 @@ export default function BulkProductsPage() {
         name: 'Milk - 1L',
         sku: 'DRY001',
         description: 'Fresh whole milk 1 liter',
-        categoryId: '', // Fill this from your categories
+        category: 'Dairy',
         price: 60,
         discountPrice: 50,
         discount: 17,
@@ -56,7 +57,7 @@ export default function BulkProductsPage() {
         name: 'Butter - 500g',
         sku: 'DRY002',
         description: 'Pure butter 500 grams',
-        categoryId: '',
+        category: 'Dairy',
         price: 450,
         discountPrice: 400,
         discount: 11,
@@ -110,7 +111,8 @@ export default function BulkProductsPage() {
             name: string
             sku: string
             description: string
-            categoryId: string
+            categoryId?: string
+            category?: string
             price: number
             discountPrice: number | null
             discount: number | null
@@ -132,8 +134,8 @@ export default function BulkProductsPage() {
               errors.push({ row: rowNum, error: 'SKU is required' })
               return
             }
-            if (!row.categoryId || !row.categoryId.toString().trim()) {
-              errors.push({ row: rowNum, error: 'Category ID is required' })
+            if ((!row.categoryId || !row.categoryId.toString().trim()) && (!row.category || !row.category.toString().trim())) {
+              errors.push({ row: rowNum, error: 'Category name is required' })
               return
             }
             if (!row.price || isNaN(row.price) || row.price <= 0) {
@@ -149,7 +151,8 @@ export default function BulkProductsPage() {
               name: row.name.toString().trim(),
               sku: row.sku.toString().trim(),
               description: row.description ? row.description.toString() : '',
-              categoryId: row.categoryId.toString().trim(),
+              ...(row.categoryId && row.categoryId.toString().trim() ? { categoryId: row.categoryId.toString().trim() } : {}),
+              ...(row.category && row.category.toString().trim() ? { category: row.category.toString().trim() } : {}),
               price: parseFloat(row.price),
               discountPrice: row.discountPrice ? parseFloat(row.discountPrice) : null,
               discount: row.discount ? parseInt(row.discount) : null,
@@ -162,7 +165,7 @@ export default function BulkProductsPage() {
 
           if (errors.length > 0 && validProducts.length === 0) {
             toast.error(`All rows have validation errors: ${errors[0].error}`)
-            setUploadResult({ success: 0, failed: errors.length, errors })
+            setUploadResult({ total: jsonData.length, success: 0, failed: errors.length, errors })
             return
           }
 
@@ -188,6 +191,7 @@ export default function BulkProductsPage() {
           }
 
           setUploadResult({
+            total: jsonData.length,
             success: result.data.successCount,
             failed: result.data.failedCount,
             errors: result.data.errors || [],
@@ -270,10 +274,9 @@ export default function BulkProductsPage() {
               <h2 className="text-lg font-semibold text-foreground mb-4">How to Use</h2>
               <ol className="space-y-2 text-muted-foreground list-decimal list-inside">
                 <li>Download the Excel template using the button below</li>
-                <li>Fill in your product details in the spreadsheet</li>
-                <li>Make sure all required fields are filled</li>
-                <li>Save the file and drag it here or use the upload button</li>
-                <li>Review the results and fix any errors</li>
+                <li>Enter the category name exactly as it appears in Categories</li>
+                <li>Upload the file</li>
+                <li>Review imported products and any row errors</li>
               </ol>
             </div>
 
@@ -339,10 +342,11 @@ export default function BulkProductsPage() {
               <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
                 <li>• <strong>name</strong> - Product name</li>
                 <li>• <strong>sku</strong> - Stock Keeping Unit (unique identifier)</li>
-                <li>• <strong>categoryId</strong> - Category UUID</li>
+                <li>• <strong>category</strong> - Existing category name (example: Fruits, Vegetables, Dairy, Machines)</li>
                 <li>• <strong>price</strong> - Product price (number)</li>
                 <li>• <strong>stock</strong> - Quantity in stock (number)</li>
               </ul>
+              <p className="mt-3 text-sm text-blue-800 dark:text-blue-300">Category names are matched automatically. No database ID is required.</p>
             </div>
 
             {/* Optional Fields Info */}
@@ -377,10 +381,9 @@ export default function BulkProductsPage() {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-2">Upload Complete</h3>
                   <div className="space-y-1 text-sm">
-                    <p><strong>✓ Successful:</strong> {uploadResult.success} products</p>
-                    {uploadResult.failed > 0 && (
-                      <p><strong>✗ Failed:</strong> {uploadResult.failed} products</p>
-                    )}
+                    <p><strong>Total Rows:</strong> {uploadResult.total}</p>
+                    <p><strong>Successfully Imported:</strong> {uploadResult.success} products</p>
+                    <p><strong>Failed Rows:</strong> {uploadResult.failed}</p>
                   </div>
                 </div>
               </div>
