@@ -9,6 +9,7 @@ interface BulkProductInput {
   description?: string
   categoryId: string
   category?: string
+  image?: string
   price: number
   discountPrice?: number | null
   discount?: number | null
@@ -16,6 +17,11 @@ interface BulkProductInput {
   weight?: number | null
   isFeatured: boolean
   isActive: boolean
+}
+
+const normalizeImageName = (value: string) => {
+  const fileName = value.split(/[\\/]/).pop()?.trim().toLowerCase() || ''
+  return fileName.replace(/\.jpeg$/i, '.jpg')
 }
 
 export async function POST(request: NextRequest) {
@@ -31,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { products } = body
+    const { products, uploadedImages } = body
 
     if (!Array.isArray(products) || products.length === 0) {
       return NextResponse.json(
@@ -42,7 +48,20 @@ export async function POST(request: NextRequest) {
 
     const errors: Array<{ row: number; error: string; sku: string }> = []
     const successProducts: Array<{ product: BulkProductInput; row: number }> = []
+    const missingImages: string[] = []
+    const warnings: string[] = []
+    const uploadedImageMap = new Map<string, string>()
+
+    if (uploadedImages && typeof uploadedImages === 'object') {
+      for (const [fileName, url] of Object.entries(uploadedImages)) {
+        if (typeof url === 'string' && url.startsWith('https://res.cloudinary.com/')) {
+          uploadedImageMap.set(normalizeImageName(fileName), url)
+        }
+      }
+    }
+
     let successCount = 0
+    let imagesLinked = 0
 
     const categories = await prisma.category.findMany({
       select: { id: true, name: true },
@@ -62,6 +81,11 @@ export async function POST(request: NextRequest) {
       const resolvedCategoryId = categoryIds.has(categoryId)
         ? categoryId
         : (categoryName ? categoryIdsByName.get(categoryName.toLowerCase()) : undefined)
+      const imageValue = product.image ?? (product as BulkProductInput & { imageUrl?: string }).imageUrl ?? (product as BulkProductInput & { image_url?: string }).image_url ?? (product as BulkProductInput & { images?: string }).images
+      const normalizedImageName = imageValue ? normalizeImageName(String(imageValue)) : ''
+      const imageUrl = normalizedImageName
+        ? uploadedImageMap.get(normalizedImageName)
+        : undefined
 
       if (!resolvedCategoryId) {
         errors.push({
@@ -88,7 +112,16 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      successProducts.push({ product: { ...product, categoryId: resolvedCategoryId }, row: rowNum })
+      if (normalizedImageName && !imageUrl) {
+        const warning = `Image not found for SKU ${product.sku}.`
+        missingImages.push(normalizedImageName)
+        warnings.push(warning)
+      }
+
+      successProducts.push({
+        product: { ...product, categoryId: resolvedCategoryId, image: imageUrl },
+        row: rowNum,
+      })
     }
 
     // Create products in bulk
@@ -116,13 +149,14 @@ export async function POST(request: NextRequest) {
             weight: product.weight || null,
             isFeatured: product.isFeatured || false,
             isActive: product.isActive === undefined ? true : product.isActive,
-            images: [],
+            images: product.image ? [product.image] : [],
             rating: 0,
             reviewCount: 0,
           },
         })
 
         successCount++
+        if (product.image) imagesLinked++
       } catch (error) {
         console.error(`Error creating product ${product.sku}:`, error)
         errors.push({
@@ -142,6 +176,9 @@ export async function POST(request: NextRequest) {
           row: err.row,
           error: err.error,
         })),
+        imagesLinked,
+        missingImages: [...new Set(missingImages)],
+        warnings: [...new Set(warnings)],
       },
     })
   } catch (error) {
