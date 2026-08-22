@@ -163,6 +163,24 @@ export default function OrderSuccessPage() {
               </span>
             </div>
           </div>
+          <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>₹{order.subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Shipping</span>
+              <span>{order.shippingCharge === 0 ? 'FREE' : `₹${order.shippingCharge.toFixed(2)}`}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Tax (GST 5%)</span>
+              <span>₹{order.tax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between border-t border-border pt-2 font-bold">
+              <span>Total Paid</span>
+              <span className="text-green-600">₹{order.total.toFixed(2)}</span>
+            </div>
+          </div>
           <div className="flex items-center justify-between gap-4 pt-4 mt-4 border-t border-border">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Payment Status</p>

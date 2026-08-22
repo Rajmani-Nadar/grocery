@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Trash2, ShoppingCart } from 'lucide-react'
 import { formatCurrency } from '@/utils'
+import { calculatePricing } from '@/lib/pricing'
 
 export function CartContent() {
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCart()
@@ -26,6 +27,8 @@ export function CartContent() {
       </div>
     )
   }
+
+  const pricing = calculatePricing(getTotal())
 
   return (
     <div className="grid min-w-0 gap-6 md:grid-cols-3 md:gap-8">
@@ -81,22 +84,25 @@ export function CartContent() {
               <div className="space-y-2">
                 <div className="flex min-w-0 justify-between gap-4 text-sm">
                   <span>Subtotal</span>
-                  <span className="shrink-0">{formatCurrency(getTotal())}</span>
+                  <span className="shrink-0">{formatCurrency(pricing.subtotal)}</span>
                 </div>
                 <div className="flex min-w-0 justify-between gap-4 text-sm">
                   <span>Shipping</span>
-                  <span className="shrink-0">{getTotal() > 500 ? 'Free' : formatCurrency(50)}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {pricing.freeShipping && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">FREE</span>}
+                    {pricing.freeShipping ? 'FREE' : formatCurrency(pricing.shipping)}
+                  </span>
                 </div>
                 <div className="flex min-w-0 justify-between gap-4 text-sm">
-                  <span>Tax</span>
-                  <span className="shrink-0">{formatCurrency(Math.round(getTotal() * 0.05 * 100) / 100)}</span>
+                  <span>Tax (GST 5%)</span>
+                  <span className="shrink-0">{formatCurrency(pricing.tax)}</span>
                 </div>
               </div>
             </div>
             <div className="border-t border-border pt-4">
               <div className="flex min-w-0 justify-between gap-4 font-bold text-lg">
                 <span>Total</span>
-                <span className="shrink-0">{formatCurrency(getTotal() * 1.05 + (getTotal() > 500 ? 0 : 50))}</span>
+                <span className="shrink-0">{formatCurrency(pricing.total)}</span>
               </div>
             </div>
           </CardContent>

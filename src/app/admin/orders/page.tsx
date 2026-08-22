@@ -374,6 +374,10 @@ export default function AdminOrdersPage() {
                           <p className="text-muted-foreground mb-1">Discount</p>
                           <p className="font-medium">₹{(order.discount || 0).toFixed(2)}</p>
                         </div>
+                        <div className="col-span-2 border-t border-border pt-3">
+                          <p className="text-muted-foreground mb-1">Final Amount</p>
+                          <p className="font-bold text-lg">₹{order.total.toFixed(2)}</p>
+                        </div>
                       </div>
                     </div>
                   )}

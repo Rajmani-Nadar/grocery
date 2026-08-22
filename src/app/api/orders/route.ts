@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { calculatePricing } from '@/lib/pricing'
 import type { PaymentMethod } from '@/types'
 
 interface OrderItemInput {
@@ -113,6 +114,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const pricing = calculatePricing(subtotal)
+
     // Generate unique order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
 
@@ -125,11 +128,11 @@ export async function POST(request: NextRequest) {
         paymentMethod,
         paymentStatus: 'PENDING',
         orderStatus: 'CONFIRMED',
-        subtotal,
-        shippingCharge: 0,
-        tax: 0,
+        subtotal: pricing.subtotal,
+        shippingCharge: pricing.shipping,
+        tax: pricing.tax,
         discount: 0,
-        total: subtotal,
+        total: pricing.total,
         items: {
           create: orderItems.map((item) => ({
             productId: item.productId,

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { getRazorpayClient, RAZORPAY_CURRENCY } from '@/lib/razorpay'
 import { Prisma } from '@prisma/client'
 import type { PaymentMethod } from '@/types'
+import { calculatePricing } from '@/lib/pricing'
 
 interface CreateOrderRequest {
   shippingAddressId: string
@@ -86,10 +87,11 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const shippingCharge = 0
-    const tax = 0
+    const pricing = calculatePricing(subtotal)
+    const shippingCharge = pricing.shipping
+    const tax = pricing.tax
     const discount = 0
-    const total = Number((subtotal + shippingCharge + tax - discount).toFixed(2))
+    const total = pricing.total
 
     if (Math.abs(parsedAmount - total) > 0.01) {
       return NextResponse.json({ error: 'Order amount mismatch' }, { status: 400 })

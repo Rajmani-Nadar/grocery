@@ -10,6 +10,7 @@ import { AlertCircle, Banknote, CheckCircle, Home, Briefcase, Loader2, Mail, Map
 import type { Address, PaymentMethod } from '@/types'
 import toast from 'react-hot-toast'
 import { loadRazorpayScript } from '@/lib/razorpay'
+import { calculatePricing } from '@/lib/pricing'
 
 declare global {
   interface RazorpayInstance {
@@ -39,6 +40,7 @@ export default function CheckoutPage() {
   const [idempotencyKey, setIdempotencyKey] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const pricing = calculatePricing(getTotal())
 
   useEffect(() => {
     setMounted(true)
@@ -166,7 +168,7 @@ export default function CheckoutPage() {
           shippingAddressId: selectedAddressId,
           paymentMethod: onlinePaymentMethod,
           idempotencyKey,
-          amount: Number(getTotal().toFixed(2)),
+          amount: pricing.total,
           items: cartItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -430,22 +432,22 @@ export default function CheckoutPage() {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>₹{getTotal().toFixed(2)}</span>
+                <span>₹{pricing.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
-                <span>₹0.00</span>
+                <span>{pricing.freeShipping ? 'FREE' : `₹${pricing.shipping.toFixed(2)}`}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tax</span>
-                <span>₹0.00</span>
+                <span className="text-muted-foreground">Tax (GST 5%)</span>
+                <span>₹{pricing.tax.toFixed(2)}</span>
               </div>
             </div>
 
             <div className="border-t border-border pt-4 mb-6">
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>₹{getTotal().toFixed(2)}</span>
+                <span>₹{pricing.total.toFixed(2)}</span>
               </div>
             </div>
 
