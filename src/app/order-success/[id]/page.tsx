@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Loader2, Package, Truck, XCircle } from 'lucide-react'
+import { BadgeCheck, CalendarDays, CheckCircle, Clock, Home, Loader2, Package, Truck, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import type { Order } from '@/types'
 import { RetryPaymentButton } from '@/components/payment/retry-payment-button'
@@ -65,6 +65,51 @@ const orderStateConfig = {
     accentClass: 'bg-red-100 dark:bg-red-900/30',
   },
 } as const
+
+const timelineSteps = [
+  { status: 'PENDING', label: 'Pending', icon: Clock },
+  { status: 'CONFIRMED', label: 'Confirmed', icon: BadgeCheck },
+  { status: 'PROCESSING', label: 'Processing', icon: Package },
+  { status: 'SHIPPED', label: 'Shipped', icon: Truck },
+  { status: 'DELIVERED', label: 'Delivered', icon: Home },
+] as const
+
+const getTimelineIndex = (order: Order) => {
+  if (order.paymentMethod === 'CASH_ON_DELIVERY' && order.orderStatus === 'PENDING') return 1
+  const status = order.orderStatus === 'PACKED' || order.orderStatus === 'OUT_FOR_DELIVERY' ? 'SHIPPED' : order.orderStatus
+  return Math.max(0, timelineSteps.findIndex((step) => step.status === status))
+}
+
+function OrderTimeline({ order }: { order: Order }) {
+  const currentIndex = getTimelineIndex(order)
+  const isCancelled = order.orderStatus === 'CANCELLED'
+  const isPaymentFailed = order.paymentStatus === 'FAILED' || order.orderStatus === 'PAYMENT_FAILED'
+  const displayIndex = isCancelled ? Math.max(0, currentIndex) : currentIndex
+
+  return (
+    <section aria-label="Order tracking timeline" className="mb-6 rounded-2xl border border-border bg-white/80 p-5 shadow-sm dark:bg-slate-900/80 sm:p-6">
+      {isPaymentFailed && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">Payment Failed: please retry payment to continue this order.</div>}
+      <ol className="flex flex-col gap-4 md:flex-row md:items-start md:gap-0">
+        {timelineSteps.map((step, index) => {
+          const Icon = step.icon
+          const completed = index < displayIndex || (!isCancelled && index === displayIndex && order.orderStatus === 'DELIVERED')
+          const current = !isCancelled && index === displayIndex
+          const disabled = isCancelled && index > displayIndex
+          return (
+            <li key={step.status} className="relative flex flex-1 items-center gap-3 md:block md:text-center">
+              {index > 0 && <span className={`absolute left-5 top-[-1rem] h-4 w-0.5 md:left-1/2 md:top-5 md:h-0.5 md:w-full md:-translate-x-full ${completed || current ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} aria-hidden="true" />}
+              <div className={`relative z-10 mx-0 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition md:mx-auto ${completed || current ? 'border-emerald-500 bg-emerald-500 text-white' : disabled ? 'border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800' : 'border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-900'} ${current ? 'animate-pulse shadow-lg shadow-emerald-300/60' : ''}`} aria-current={current ? 'step' : undefined} aria-label={`${step.label}${current ? ', current step' : ''}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="md:mt-2"><p className={`text-sm font-semibold ${disabled ? 'text-slate-400' : 'text-foreground'}`}>{step.label}</p>{index === 0 && <p className="text-[11px] text-muted-foreground">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>}{step.status === 'DELIVERED' && order.deliveredAt && <p className="text-[11px] text-muted-foreground">{new Date(order.deliveredAt).toLocaleDateString('en-IN')}</p>}</div>
+            </li>
+          )
+        })}
+      </ol>
+      {isCancelled && <div className="mt-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"><XCircle className="h-5 w-5" />Order Cancelled. Cancellation reason will be provided by the store.</div>}
+    </section>
+  )
+}
 
 export default function OrderSuccessPage() {
   const { data: session } = useSession()
@@ -160,6 +205,13 @@ export default function OrderSuccessPage() {
           </div>
           <h1 className="text-3xl font-bold mb-2">{state.title}</h1>
           <p className="text-muted-foreground">{state.subtitle}</p>
+        </div>
+
+        <OrderTimeline order={order} />
+
+        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-white/80 p-5 shadow-sm dark:bg-slate-900/80"><div className="flex items-center gap-2 text-sm font-semibold"><CalendarDays className="h-4 w-4 text-emerald-600" />Estimated Delivery</div><p className="mt-3 font-semibold">{order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : "We'll update your estimated delivery date once your order is shipped."}</p></div>
+          <div className="rounded-2xl border border-border bg-white/80 p-5 shadow-sm dark:bg-slate-900/80"><p className="text-sm font-semibold">Delivery Progress</p><div className="mt-3 grid grid-cols-2 gap-3 text-sm"><span className="text-muted-foreground">Order</span><span className="text-right font-semibold">{order.orderNumber}</span><span className="text-muted-foreground">Payment</span><span className="text-right font-semibold">{order.paymentStatus}</span><span className="text-muted-foreground">Method</span><span className="text-right font-semibold">{order.paymentMethod.replace(/_/g, ' ')}</span><span className="text-muted-foreground">Status</span><span className="text-right font-semibold">{order.orderStatus.replace(/_/g, ' ')}</span></div></div>
         </div>
 
         {/* Essential Order Info */}

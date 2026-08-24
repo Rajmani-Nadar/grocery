@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ChevronDown, Package, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { AlertCircle, BadgeCheck, CalendarDays, Loader2, ChevronDown, Package, Clock, CheckCircle, Home, Truck, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import type { Order } from '@/types'
 import toast from 'react-hot-toast'
@@ -87,6 +87,44 @@ function OrdersContent() {
     }
   }
 
+  const timelineSteps = [
+    { status: 'PENDING', label: 'Pending', icon: Clock },
+    { status: 'CONFIRMED', label: 'Confirmed', icon: BadgeCheck },
+    { status: 'PROCESSING', label: 'Processing', icon: Package },
+    { status: 'SHIPPED', label: 'Shipped', icon: Truck },
+    { status: 'DELIVERED', label: 'Delivered', icon: Home },
+  ] as const
+
+  const getTimelineIndex = (order: Order) => {
+    if (order.paymentMethod === 'CASH_ON_DELIVERY' && order.orderStatus === 'PENDING') return 1
+    const status = order.orderStatus === 'PACKED' || order.orderStatus === 'OUT_FOR_DELIVERY' ? 'SHIPPED' : order.orderStatus
+    return Math.max(0, timelineSteps.findIndex((step) => step.status === status))
+  }
+
+  const renderTimeline = (order: Order, compact = false) => {
+    const currentIndex = getTimelineIndex(order)
+    const cancelled = order.orderStatus === 'CANCELLED'
+    const displayIndex = cancelled ? Math.max(0, currentIndex) : currentIndex
+    return <section aria-label="Order tracking timeline" className={compact ? 'mt-4 rounded-xl border border-border bg-slate-50 p-3 dark:bg-slate-800' : 'rounded-2xl border border-border bg-white/70 p-4 dark:bg-slate-900/70'}>
+      {(order.paymentStatus === 'FAILED' || order.orderStatus === 'PAYMENT_FAILED') && <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-2 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">Payment Failed: please retry payment to continue this order.</div>}
+      <ol className={`flex ${compact ? 'items-center' : 'flex-col gap-4 md:flex-row md:gap-0'} relative`}>
+        {timelineSteps.map((step, index) => {
+          const Icon = step.icon
+          const complete = index < displayIndex || (!cancelled && index === displayIndex && order.orderStatus === 'DELIVERED')
+          const current = !cancelled && index === displayIndex
+          const disabled = cancelled && index > displayIndex
+          return <li key={step.status} className={`relative flex ${compact ? 'flex-1 flex-col items-center' : 'flex-1 items-center gap-3 md:block md:text-center'}`}>
+            {index > 0 && <span className={`absolute ${compact ? 'left-0 top-4 h-0.5 w-full -translate-x-1/2' : 'left-5 top-[-1rem] h-4 w-0.5 md:left-1/2 md:top-5 md:h-0.5 md:w-full md:-translate-x-full'} ${complete || current ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} aria-hidden="true" />}
+            <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${complete || current ? 'border-emerald-500 bg-emerald-500 text-white' : disabled ? 'border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800' : 'border-slate-300 bg-white text-slate-400 dark:border-slate-600 dark:bg-slate-900'} ${current ? 'animate-pulse shadow-md shadow-emerald-300/60' : ''}`} aria-current={current ? 'step' : undefined} aria-label={`${step.label}${current ? ', current step' : ''}`}><Icon className="h-4 w-4" /></div>
+            {!compact && <div className="mt-2"><p className={`text-sm font-semibold ${disabled ? 'text-slate-400' : ''}`}>{step.label}</p>{index === 0 && <p className="text-[11px] text-muted-foreground">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>}{step.status === 'DELIVERED' && order.deliveredAt && <p className="text-[11px] text-muted-foreground">{new Date(order.deliveredAt).toLocaleDateString('en-IN')}</p>}</div>}
+          </li>
+        })}
+      </ol>
+      {compact && <div className="mt-2 flex justify-between text-[10px] font-medium text-muted-foreground"><span>Pending</span><span>Delivered</span></div>}
+      {cancelled && <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"><XCircle className="h-4 w-4" />Order Cancelled. Cancellation reason will be provided by the store.</div>}
+    </section>
+  }
+
   if (isLoading) {
     return (
       <main className="min-h-screen py-12 bg-slate-50 dark:bg-slate-950">
@@ -152,6 +190,7 @@ function OrdersContent() {
                 </CardHeader>
 
                 <CardContent>
+                  {renderTimeline(order, true)}
                   <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Items</p>
@@ -188,6 +227,8 @@ function OrdersContent() {
 
                   {expandedOrderId === order.id && (
                     <div className="space-y-4 p-3 bg-slate-50 dark:bg-slate-800 rounded border border-border">
+                      {renderTimeline(order)}
+                      <div className="grid gap-3 rounded-xl border border-border bg-white/70 p-4 text-sm dark:bg-slate-900/70 sm:grid-cols-2"><div><p className="flex items-center gap-2 font-semibold"><CalendarDays className="h-4 w-4 text-emerald-600" />Estimated Delivery</p><p className="mt-2 text-muted-foreground">{order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : "We'll update your estimated delivery date once your order is shipped."}</p></div><div><p className="font-semibold">Delivery Progress</p><div className="mt-2 grid grid-cols-2 gap-1 text-muted-foreground"><span>Order</span><span className="text-right font-medium text-foreground">{order.orderNumber}</span><span>Payment</span><span className="text-right font-medium text-foreground">{order.paymentStatus}</span><span>Status</span><span className="text-right font-medium text-foreground">{order.orderStatus.replace(/_/g, ' ')}</span></div></div></div>
                       {/* Order Items */}
                       <div>
                         <h4 className="font-semibold mb-2">Items</h4>
@@ -266,7 +307,7 @@ function OrdersContent() {
                     )}
                     <Link href={`/order-success/${order.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">
-                        View Order
+                        View Tracking
                       </Button>
                     </Link>
                   </div>
