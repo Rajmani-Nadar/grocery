@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation'
 import { useCart, useTheme, useWishlist } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
+import { SearchSuggestions } from '@/components/search/search-suggestions'
 import {
-  Search,
   ShoppingCart,
   Heart,
   Menu,
@@ -28,7 +28,6 @@ export function Header() {
   const { isDark, toggleDarkMode } = useTheme()
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [itemCount, setItemCount] = useState(0)
   const [wishlistCount, setWishlistCount] = useState(0)
   const [mounted, setMounted] = useState(false)
@@ -60,14 +59,6 @@ export function Header() {
       saveWishlistToStorage()
     }
   }, [cartItems, wishlistItems, session, saveCartToStorage, saveWishlistToStorage])
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/products?search=${encodeURIComponent(searchQuery)}`)
-      setSearchQuery('')
-    }
-  }
 
   const handleLogout = async () => {
     try {
@@ -150,26 +141,7 @@ export function Header() {
           </nav>
 
           {/* Search Bar */}
-          <form
-            onSubmit={handleSearch}
-            className="flex-1 max-w-md mx-4"
-          >
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900"
-              />
-              <button
-                type="submit"
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
-              >
-                <Search size={18} className="text-muted-foreground" />
-              </button>
-            </div>
-          </form>
+          <SearchSuggestions className="mx-4 max-w-md flex-1" />
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
@@ -253,17 +225,7 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden border-t border-border mt-3 pt-3 space-y-3">
             {/* Search for Mobile */}
-            <form onSubmit={handleSearch} className="w-full">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900"
-                />
-              </div>
-            </form>
+            <SearchSuggestions className="w-full" onNavigate={() => setIsMenuOpen(false)} />
 
             {/* Mobile Navigation */}
             <nav className="space-y-2">
