@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Loader2, Edit2, Trash2, Plus, Search, ChevronLeft, ChevronRight, ChevronDown, Tags, Package, Boxes, AlertTriangle, CheckCircle2, X, Eye } from 'lucide-react'
+import { Loader2, Edit2, Trash2, Plus, Minus, Search, ChevronLeft, ChevronRight, ChevronDown, Tags, Package, Boxes, AlertTriangle, CheckCircle2, X, Eye, Star, ToggleLeft, ToggleRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Product } from '@/types'
 
@@ -33,8 +33,13 @@ export default function AdminProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [selectedStock, setSelectedStock] = useState<string>('')
+  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string>('')
   const [sort, setSort] = useState<string>('newest')
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [updatingProducts, setUpdatingProducts] = useState<string[]>([])
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') {
@@ -53,7 +58,8 @@ export default function AdminProductsPage() {
 
     fetchCategories()
     fetchProducts()
-  }, [status, session, router, currentPage, searchQuery, selectedCategory, selectedStatus, selectedStock, sort])
+    fetchLowStockProducts()
+  }, [status, session, router, currentPage, searchQuery, selectedCategory, selectedStatus, selectedStock, selectedQuickFilter, sort])
 
   const fetchCategories = async () => {
     try {
@@ -87,6 +93,70 @@ export default function AdminProductsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const fetchLowStockProducts = async () => {
+    try {
+      const response = await fetch('/api/admin/products?page=1&pageSize=10&stock=low-stock&sort=stock-low')
+      const data = await response.json()
+      setLowStockProducts((data.data?.products || []).sort((a: Product, b: Product) => a.stock - b.stock))
+    } catch (error) {
+      console.error('Failed to fetch low stock products:', error)
+    }
+  }
+
+  const updateProduct = async (product: Product, updates: Partial<Product>) => {
+    setUpdatingProducts((current) => [...current, product.id])
+    try {
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: product.name,
+          description: product.description || '',
+          price: product.price,
+          discountPrice: product.discountPrice,
+          discount: product.discount,
+          stock: updates.stock ?? product.stock,
+          sku: product.sku,
+          weight: product.weight,
+          categoryId: product.categoryId || product.category?.id,
+          images: product.images,
+          isFeatured: updates.isFeatured ?? product.isFeatured,
+          isActive: updates.isActive ?? product.isActive,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update product')
+      }
+      const result = await response.json()
+      setProducts((current) => current.map((item) => item.id === product.id ? { ...item, ...result.data } : item))
+      setLowStockProducts((current) => current.map((item) => item.id === product.id ? { ...item, ...result.data } : item))
+      toast.success('Inventory updated')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update inventory')
+    } finally {
+      setUpdatingProducts((current) => current.filter((id) => id !== product.id))
+    }
+  }
+
+  const handleStockUpdate = (product: Product, change: number) => {
+    updateProduct(product, { stock: Math.max(0, product.stock + change) })
+  }
+
+  const handleBulkUpdate = async (action: 'increase' | 'decrease' | 'activate' | 'deactivate') => {
+    const selected = products.filter((product) => selectedProducts.includes(product.id))
+    if (selected.length === 0) return
+    setIsBulkUpdating(true)
+    await Promise.all(selected.map((product) => updateProduct(product, action === 'increase'
+      ? { stock: product.stock + 1 }
+      : action === 'decrease'
+        ? { stock: Math.max(0, product.stock - 1) }
+        : { isActive: action === 'activate' })))
+    setSelectedProducts([])
+    setIsBulkUpdating(false)
+    fetchLowStockProducts()
   }
 
   const handleDelete = async (id: string) => {
@@ -126,6 +196,7 @@ export default function AdminProductsPage() {
     setSelectedCategory('')
     setSelectedStatus('')
     setSelectedStock('')
+    setSelectedQuickFilter('')
     setSort('newest')
     setCurrentPage(1)
   }
@@ -139,6 +210,17 @@ export default function AdminProductsPage() {
   const activeProducts = products.filter((product) => product.isActive).length
   const outOfStock = products.filter((product) => product.stock === 0).length
   const lowStock = products.filter((product) => product.stock > 0 && product.stock <= 10).length
+  const allVisibleSelected = products.length > 0 && products.every((product) => selectedProducts.includes(product.id))
+  const displayedProducts = selectedQuickFilter === 'featured'
+    ? products.filter((product) => product.isFeatured)
+    : products
+
+  const setInventoryFilter = (filter: string) => {
+    setSelectedQuickFilter(filter === 'featured' ? 'featured' : '')
+    setSelectedStatus(filter === 'active' || filter === 'inactive' ? filter : '')
+    setSelectedStock(filter === 'in-stock' || filter === 'low-stock' || filter === 'out-of-stock' ? filter : '')
+    setCurrentPage(1)
+  }
 
   if (isLoading || status === 'loading') {
     return (
@@ -219,6 +301,15 @@ export default function AdminProductsPage() {
               className="w-full rounded-full border border-border bg-white py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-slate-800"
             />
           </div>
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-2">
+          {[['', 'All'], ['in-stock', 'In Stock'], ['low-stock', 'Low Stock'], ['out-of-stock', 'Out of Stock'], ['featured', 'Featured'], ['active', 'Active'], ['inactive', 'Inactive']].map(([value, label]) => {
+            const active = value === 'featured'
+              ? selectedQuickFilter === value
+              : value === selectedStock || value === selectedStatus || (!value && !selectedStock && !selectedStatus && !selectedQuickFilter)
+            return <button key={value} type="button" onClick={() => setInventoryFilter(value)} className={`rounded-full border px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 ${active ? 'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'border-border bg-white/80 text-muted-foreground hover:border-emerald-400 hover:text-emerald-700 dark:bg-slate-900/80'}`}>{label}</button>
+          })}
         </div>
 
         {/* Filters */}
@@ -323,25 +414,44 @@ export default function AdminProductsPage() {
 
         {/* Products Table */}
         <div className="overflow-hidden rounded-3xl border border-border/70 bg-white/90 shadow-xl shadow-slate-200/50 dark:bg-slate-900/90 dark:shadow-black/20">
-          {products.length > 0 ? (
+          {selectedProducts.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-border bg-emerald-50/80 p-4 dark:bg-emerald-950/20">
+              <span className="mr-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200">{selectedProducts.length} selected</span>
+              <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('increase')}><Plus className="mr-1 h-4 w-4" />Increase stock</Button>
+              <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('decrease')}><Minus className="mr-1 h-4 w-4" />Decrease stock</Button>
+              <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('activate')}><ToggleRight className="mr-1 h-4 w-4" />Activate</Button>
+              <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('deactivate')}><ToggleLeft className="mr-1 h-4 w-4" />Deactivate</Button>
+              {isBulkUpdating && <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />}
+            </div>
+          )}
+          {displayedProducts.length > 0 ? (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="sticky top-0 z-10 border-b border-border bg-slate-50/95 dark:bg-slate-800/95">
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground"><input type="checkbox" aria-label="Select all visible products" checked={allVisibleSelected} onChange={(event) => setSelectedProducts(event.target.checked ? displayedProducts.map((product) => product.id) : [])} /></th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Name</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">SKU</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Category</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Price</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Stock</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Inventory Status</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Status</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Date Uploaded</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((product) => (
+                    {displayedProducts.map((product) => {
+                      const isUpdating = updatingProducts.includes(product.id)
+                      const stockStatus = product.stock === 0
+                        ? { label: 'Out of Stock', className: 'bg-red-100 text-red-700', bar: 'bg-red-500', width: 'w-0' }
+                        : product.stock <= 10
+                          ? { label: 'Low Stock', className: 'bg-amber-100 text-amber-700', bar: 'bg-amber-500', width: 'w-1/3' }
+                          : { label: 'In Stock', className: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-500', width: 'w-full' }
+                      return (
                       <motion.tr key={product.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className="border-b border-border/70 even:bg-slate-50/50 hover:bg-emerald-50/50 dark:even:bg-slate-800/30 dark:hover:bg-emerald-950/20">
+                        <td className="px-6 py-4"><input type="checkbox" aria-label={`Select ${product.name}`} checked={selectedProducts.includes(product.id)} onChange={(event) => setSelectedProducts((current) => event.target.checked ? [...current, product.id] : current.filter((id) => id !== product.id))} /></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             {product.images && product.images.length > 0 && (
@@ -367,11 +477,16 @@ export default function AdminProductsPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${product.stock === 0 ? 'bg-red-100 text-red-700' : product.stock <= 10 ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}
-                          >
-                            {product.stock}
-                          </span>
+                          <div className="flex min-w-[150px] flex-col items-end gap-2">
+                            <div className="flex items-center gap-1">
+                              <button type="button" aria-label={`Decrease ${product.name} stock`} disabled={isUpdating || product.stock === 0} onClick={() => handleStockUpdate(product, -1)} className="rounded-md border border-border p-1 transition hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-40"><Minus className="h-3 w-3" /></button>
+                              <input aria-label={`${product.name} stock quantity`} type="number" min="0" value={product.stock} disabled={isUpdating} onChange={(event) => { const stock = Number(event.target.value); if (Number.isInteger(stock) && stock >= 0) updateProduct(product, { stock }) }} className="w-14 rounded-md border border-border bg-transparent px-2 py-1 text-center text-sm font-semibold" />
+                              <button type="button" aria-label={`Increase ${product.name} stock`} disabled={isUpdating} onClick={() => handleStockUpdate(product, 1)} className="rounded-md border border-border p-1 transition hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-40"><Plus className="h-3 w-3" /></button>
+                              {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />}
+                            </div>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${stockStatus.className}`}>{stockStatus.label}</span>
+                            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className={`h-full ${stockStatus.bar} ${stockStatus.width} transition-all`} /></div>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           {product.isActive ? (
@@ -426,7 +541,8 @@ export default function AdminProductsPage() {
                           )}
                         </td>
                       </motion.tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -517,6 +633,30 @@ export default function AdminProductsPage() {
             </div>
           )}
         </div>
+
+        <section className="mt-8 rounded-3xl border border-border/70 bg-white/85 p-5 shadow-xl shadow-slate-200/50 backdrop-blur sm:p-6 dark:bg-slate-900/85 dark:shadow-black/20">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">Low Stock Alerts</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Prioritize the products that need replenishing.</p>
+            </div>
+            <AlertTriangle className="h-6 w-6 text-amber-500" />
+          </div>
+          {lowStockProducts.length > 0 ? (
+            <div className="space-y-3">
+              {lowStockProducts.map((product, index) => (
+                <motion.div key={product.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.04 }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-slate-50/70 p-3 transition hover:-translate-y-0.5 hover:border-amber-300 dark:bg-slate-800/50">
+                  {product.images?.[0] ? <img src={product.images[0]} alt={product.name} className="h-11 w-11 rounded-xl object-cover" /> : <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><Package className="h-5 w-5" /></div>}
+                  <div className="min-w-[150px] flex-1"><p className="font-semibold">{product.name}</p><p className="text-xs text-muted-foreground">SKU: {product.sku}</p></div>
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700">{product.stock} left</span>
+                  <Button size="sm" onClick={() => updateProduct(product, { stock: product.stock + 10 })} disabled={updatingProducts.includes(product.id)}>{updatingProducts.includes(product.id) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Restock Now'}</Button>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 p-6 text-center text-sm font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">All products are sufficiently stocked.</p>
+          )}
+        </section>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">

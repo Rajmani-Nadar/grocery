@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { RetryPaymentButton } from '@/components/payment/retry-payment-button'
 import Link from 'next/link'
-import { ArrowRight, ShoppingBag, MapPin, Heart, Settings, LayoutGrid, BarChart3, DollarSign, Package, TrendingUp, Users, Tag } from 'lucide-react'
+import { ArrowRight, ShoppingBag, MapPin, Heart, Settings, LayoutGrid, BarChart3, DollarSign, Package, TrendingUp, Users, Tag, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -24,8 +24,11 @@ export default async function DashboardPage() {
   const userRole = (session.user as any)?.role || 'CUSTOMER'
 
   if (userRole === 'ADMIN') {
-    const [totalProducts, totalOrders, totalCustomers, allOrders] = await Promise.all([
+    const [totalProducts, inStockProducts, lowStockProducts, outOfStockProducts, totalOrders, totalCustomers, allOrders] = await Promise.all([
       prisma.product.count(),
+      prisma.product.count({ where: { stock: { gt: 10 } } }),
+      prisma.product.count({ where: { stock: { gt: 0, lte: 10 } } }),
+      prisma.product.count({ where: { stock: 0 } }),
       prisma.order.count(),
       prisma.user.count({ where: { role: 'CUSTOMER' } }),
       prisma.order.findMany({
@@ -75,6 +78,21 @@ export default async function DashboardPage() {
               { label: 'Pending Orders', value: pendingOrders, icon: TrendingUp, tone: 'from-violet-50 to-white border-violet-200 text-violet-600 shadow-violet-100/60' },
             ].map((card, index) => { const Icon = card.icon; return <div key={card.label} className={`group animate-[fade-in-up_450ms_ease-out_both] rounded-3xl border bg-gradient-to-br p-6 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl ${card.tone}`} style={{ animationDelay: `${index * 70}ms` }}><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{card.label}</p><p className="mt-3 text-3xl font-bold tracking-tight text-foreground">{card.value}</p></div><div className="rounded-2xl bg-white p-3 shadow-md transition duration-300 group-hover:rotate-6 group-hover:scale-110"><Icon className="h-6 w-6" /></div></div><div className="mt-6 h-1.5 overflow-hidden rounded-full bg-black/5"><div className="h-full w-3/4 rounded-full bg-current opacity-50" /></div></div> })}
           </div>
+
+          <section className="animate-[fade-in-up_450ms_ease-out_both]">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div><h2 className="text-xl font-semibold tracking-tight">Inventory Health</h2><p className="mt-1 text-sm text-muted-foreground">Know what is ready to sell and what needs attention.</p></div>
+              <Link href="/admin/products" className="text-sm font-semibold text-primary hover:underline">Manage inventory</Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: 'Total Products', value: totalProducts, icon: Package, tone: 'from-blue-50 to-cyan-50 border-blue-200 text-blue-600' },
+                { label: 'In Stock Products', value: inStockProducts, icon: CheckCircle2, tone: 'from-emerald-50 to-green-50 border-emerald-200 text-emerald-600' },
+                { label: 'Low Stock Products', value: lowStockProducts, icon: AlertTriangle, tone: 'from-amber-50 to-orange-50 border-amber-200 text-amber-600' },
+                { label: 'Out of Stock Products', value: outOfStockProducts, icon: XCircle, tone: 'from-red-50 to-rose-50 border-red-200 text-red-600' },
+              ].map(({ label, value, icon: Icon, tone }, index) => <div key={label} className={`group rounded-3xl border bg-gradient-to-br p-5 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl ${tone}`} style={{ animationDelay: `${index * 70}ms` }}><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-3 text-3xl font-bold tracking-tight text-foreground">{value}</p></div><div className="rounded-2xl bg-white/80 p-3 shadow-md transition duration-300 group-hover:rotate-6 group-hover:scale-110"><Icon className="h-6 w-6" /></div></div><div className="mt-5 h-1.5 overflow-hidden rounded-full bg-black/5"><div className="h-full w-3/4 rounded-full bg-current opacity-50" /></div></div>)}
+            </div>
+          </section>
 
           <div className="grid min-w-0 gap-6 lg:grid-cols-[1.35fr_0.65fr]">
             <section className="min-w-0 overflow-hidden rounded-3xl border border-border/70 bg-white/85 p-4 shadow-xl shadow-slate-200/50 backdrop-blur sm:p-6 dark:bg-slate-900/85 dark:shadow-black/20"><div className="flex min-w-0 flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-4"><div className="min-w-0"><h2 className="text-xl font-semibold tracking-tight">Recent Orders</h2><p className="mt-1 truncate text-sm text-muted-foreground">Latest customer purchases and status updates.</p></div><Link href="/admin/orders" className="shrink-0 text-sm font-semibold text-primary hover:underline">View all</Link></div><div className="mt-5 min-w-0 space-y-3 sm:mt-6">{allOrders.slice(0, 5).map((order, index) => <div key={order.id} className="group flex min-w-0 flex-col items-start gap-3 overflow-hidden rounded-2xl border border-border/70 bg-slate-50/80 p-3 transition duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4 dark:bg-slate-800/60 dark:hover:border-emerald-700"><div className="flex min-w-0 w-full items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white shadow-md">{(order.user?.name || 'Customer').split(' ').map((part) => part[0]).slice(0, 2).join('')}</div><div className="min-w-0"><p className="truncate font-semibold">{order.user?.name || 'Customer'}</p><p className="truncate text-sm text-muted-foreground">{order.orderNumber} · {new Date(order.createdAt).toLocaleDateString('en-IN')}</p></div></div><div className="flex w-full shrink-0 items-center justify-between gap-2 text-left sm:w-auto sm:justify-end sm:text-right"><p className="font-bold">₹{Math.round(order.total).toLocaleString('en-IN')}</p><span className="max-w-full truncate rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">{order.orderStatus.replace(/_/g, ' ')}</span></div></div>)}</div></section>
