@@ -14,6 +14,7 @@ import { useWishlist } from '@/store'
 import { showCartToast, showWishlistToast } from '@/components/ui/action-toast'
 import { useSession } from 'next-auth/react'
 import { useAuthGate } from '@/components/auth/auth-gate'
+import { ProductGallery } from '@/components/product/product-gallery'
 
 interface Product {
   id: string
@@ -51,7 +52,6 @@ export default function ProductDetailPage() {
   const { requireAuth } = useAuthGate()
   const [quantity, setQuantity] = useState(1)
   const [addedToCart, setAddedToCart] = useState(false)
-  const [selectedImage, setSelectedImage] = useState(0)
 
   const { addItem } = useCart()
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist()
@@ -162,55 +162,7 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Product Images */}
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden aspect-square relative">
-              {product.images && product.images.length > 0 ? (
-                <Image
-                  src={product.images[selectedImage] || '/placeholder.png'}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement
-                    img.src = '/placeholder.png'
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  No Image Available
-                </div>
-              )}
-            </div>
-
-            {/* Thumbnail Images */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex gap-2">
-                {product.images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImage === idx
-                        ? 'border-primary-600'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
-                  >
-                    <Image
-                      src={img || '/placeholder.png'}
-                      alt={`${product.name}-${idx}`}
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
-                        const img = e.target as HTMLImageElement
-                        img.src = '/placeholder.png'
-                      }}
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductGallery images={product.images || []} productName={product.name} />
 
           {/* Product Details */}
           <div className="space-y-6">
