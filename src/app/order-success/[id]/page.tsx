@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, CheckCircle, Clock3, Loader2, Truck } from 'lucide-react'
+import { CheckCircle, Loader2, Package, Truck, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import type { Order } from '@/types'
 import { RetryPaymentButton } from '@/components/payment/retry-payment-button'
@@ -14,6 +14,57 @@ const OrderCelebration = dynamic(
   () => import('@/components/celebration/OrderCelebration'),
   { ssr: false }
 )
+
+const orderStateConfig = {
+  PENDING: {
+    title: 'Order Confirmed!',
+    subtitle: 'Your order has been placed successfully and is awaiting confirmation.',
+    icon: CheckCircle,
+    iconClass: 'text-green-500',
+    badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    accentClass: 'bg-amber-100 dark:bg-amber-900/30',
+  },
+  CONFIRMED: {
+    title: 'Order Confirmed!',
+    subtitle: 'Your order has been confirmed and is being prepared for processing.',
+    icon: CheckCircle,
+    iconClass: 'text-green-500',
+    badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    accentClass: 'bg-green-100 dark:bg-green-900/30',
+  },
+  PROCESSING: {
+    title: 'Order Processing',
+    subtitle: 'Your order is being prepared.',
+    icon: Package,
+    iconClass: 'text-orange-500',
+    badgeClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    accentClass: 'bg-orange-100 dark:bg-orange-900/30',
+  },
+  SHIPPED: {
+    title: 'Order Shipped',
+    subtitle: 'Your order is on the way.',
+    icon: Truck,
+    iconClass: 'text-blue-500',
+    badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    accentClass: 'bg-blue-100 dark:bg-blue-900/30',
+  },
+  DELIVERED: {
+    title: 'Order Delivered',
+    subtitle: 'Thank you for shopping with us. We hope you enjoy your order.',
+    icon: CheckCircle,
+    iconClass: 'text-green-500',
+    badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    accentClass: 'bg-green-100 dark:bg-green-900/30',
+  },
+  CANCELLED: {
+    title: 'Order Cancelled',
+    subtitle: 'This order has been cancelled. If payment was completed, any refund will be processed according to store policy.',
+    icon: XCircle,
+    iconClass: 'text-red-500',
+    badgeClass: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    accentClass: 'bg-red-100 dark:bg-red-900/30',
+  },
+} as const
 
 export default function OrderSuccessPage() {
   const { data: session } = useSession()
@@ -85,54 +136,27 @@ export default function OrderSuccessPage() {
     )
   }
 
-  const isCashOnDelivery = order.paymentMethod === 'CASH_ON_DELIVERY'
   const isPaymentPending = order.paymentMethod === 'UPI' && order.paymentStatus === 'PENDING'
-  const isPaymentFailed = order.paymentStatus === 'FAILED'
   const isPaymentSuccessful = order.paymentStatus === 'PAID'
+  const isCancelled = order.orderStatus === 'CANCELLED'
   const shouldShowRetry = isPaymentPending
-
-  const state = isCashOnDelivery
-    ? {
-        title: 'Order Confirmed (Cash on Delivery)',
-        subtitle: 'Your order has been placed successfully. Pay when it is delivered.',
-        icon: <Truck className="h-16 w-16 text-green-500" />,
-        badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-        badgeText: 'Cash on Delivery',
-      }
-    : isPaymentPending
-      ? {
-          title: 'Payment Pending',
-          subtitle: 'Your order has been created but payment is pending. Complete your payment to confirm this order.',
-          icon: <Clock3 className="h-16 w-16 text-amber-500" />,
-          badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-          badgeText: 'Pending',
-        }
-      : isPaymentFailed
-        ? {
-            title: 'Payment Failed',
-            subtitle: 'Your order is waiting for payment. Please try again.',
-            icon: <AlertTriangle className="h-16 w-16 text-red-500" />,
-            badgeClass: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-            badgeText: 'Failed',
-          }
-        : {
-            title: 'Order Confirmed!',
-            subtitle: isPaymentSuccessful
-              ? 'Your payment was successful and your order has been confirmed.'
-              : 'Your order status has been updated.',
-            icon: <CheckCircle className="h-16 w-16 text-green-500" />,
-            badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-            badgeText: order.paymentStatus,
-          }
+  const state = orderStateConfig[order.orderStatus as keyof typeof orderStateConfig] ?? orderStateConfig.PENDING
+  const paymentBadgeClass = order.paymentStatus === 'PAID'
+    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+    : order.paymentStatus === 'FAILED'
+      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
 
   return (
     <main className="min-h-screen py-12 bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
       <div className="container-custom max-w-xl">
-        {isPaymentSuccessful ? <OrderCelebration /> : null}
+        {isPaymentSuccessful && !isCancelled ? <OrderCelebration /> : null}
         {/* Success Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className={isPaymentSuccessful ? 'animate-bounce' : ''}>{state.icon}</div>
+            <div className={`rounded-full p-3 ${state.accentClass} ${isPaymentSuccessful && !isCancelled ? 'animate-bounce' : ''}`}>
+              <state.icon className={`h-16 w-16 ${state.iconClass}`} />
+            </div>
           </div>
           <h1 className="text-3xl font-bold mb-2">{state.title}</h1>
           <p className="text-muted-foreground">{state.subtitle}</p>
@@ -184,8 +208,8 @@ export default function OrderSuccessPage() {
           <div className="flex items-center justify-between gap-4 pt-4 mt-4 border-t border-border">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Payment Status</p>
-              <span className={`inline-block rounded px-2 py-1 text-sm font-semibold ${state.badgeClass}`}>
-                {state.badgeText}
+                <span className={`inline-block rounded px-2 py-1 text-sm font-semibold ${paymentBadgeClass}`}>
+                {order.paymentStatus}
               </span>
             </div>
             {shouldShowRetry && (

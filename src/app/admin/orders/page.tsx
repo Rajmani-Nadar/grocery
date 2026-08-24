@@ -25,6 +25,24 @@ import Link from 'next/link'
 import type { Order } from '@/types'
 import toast from 'react-hot-toast'
 
+const allowedTransitions: Record<string, string[]> = {
+  PENDING: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED'],
+  DELIVERED: [],
+  CANCELLED: [],
+}
+
+const orderStatusOptions = [
+  ['PENDING', 'Pending'],
+  ['CONFIRMED', 'Confirmed'],
+  ['PROCESSING', 'Processing'],
+  ['SHIPPED', 'Shipped'],
+  ['DELIVERED', 'Delivered'],
+  ['CANCELLED', 'Cancelled'],
+] as const
+
 export default function AdminOrdersPage() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -74,9 +92,10 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ orderStatus: newStatus }),
       })
 
-      if (!response.ok) throw new Error('Failed to update order')
-      
-      const updatedOrder = await response.json()
+      const result = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(result?.error || 'Failed to update order')
+
+      const updatedOrder = result
       setOrders(orders.map((o) => (o.id === orderId ? updatedOrder : o)))
       toast.success('Order status updated')
     } catch (error) {
@@ -96,9 +115,10 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ paymentStatus: newStatus }),
       })
 
-      if (!response.ok) throw new Error('Failed to update order')
-      
-      const updatedOrder = await response.json()
+      const result = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(result?.error || 'Failed to update order')
+
+      const updatedOrder = result
       setOrders(orders.map((o) => (o.id === orderId ? updatedOrder : o)))
       toast.success('Payment status updated')
     } catch (error) {
@@ -137,6 +157,11 @@ export default function AdminOrdersPage() {
   const paidOrders = orders.filter((order) => ['PAID', 'COMPLETED', 'CAPTURED'].includes(order.paymentStatus)).length
   const codOrders = orders.filter((order) => order.paymentMethod === 'CASH_ON_DELIVERY').length
   const paidRevenue = orders.reduce((sum, order) => ['PAID', 'COMPLETED', 'CAPTURED'].includes(order.paymentStatus) ? sum + order.total : sum, 0)
+
+  const getAvailableStatuses = (currentStatus: string) => {
+    const nextStatuses = allowedTransitions[currentStatus] || []
+    return orderStatusOptions.filter(([status]) => status === currentStatus || nextStatuses.includes(status))
+  }
 
   if (isLoading) {
     return (
@@ -264,15 +289,20 @@ export default function AdminOrdersPage() {
                         disabled={isUpdating === order.id}
                         className="w-full text-sm px-2 py-1 border border-border rounded dark:bg-slate-900"
                       >
-                        <option value="PENDING">Pending</option>
-                        <option value="PROCESSING">Processing</option>
-                        <option value="CONFIRMED">Confirmed</option>
-                        <option value="PACKED">Packed</option>
-                        <option value="SHIPPED">Shipped</option>
-                        <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-                        <option value="DELIVERED">Delivered</option>
-                        <option value="CANCELLED">Cancelled</option>
+                        {!getAvailableStatuses(order.orderStatus).some(([status]) => status === order.orderStatus) && (
+                          <option value={order.orderStatus}>{order.orderStatus.replace(/_/g, ' ')}</option>
+                        )}
+                        {orderStatusOptions.map(([status, label]) => (
+                          <option key={status} value={status} disabled={!getAvailableStatuses(order.orderStatus).some(([availableStatus]) => availableStatus === status)}>
+                            {label}
+                          </option>
+                        ))}
                       </select>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {allowedTransitions[order.orderStatus]?.length
+                          ? `Next: ${allowedTransitions[order.orderStatus].map((status) => status.replace(/_/g, ' ')).join(', ')}`
+                          : 'No further status changes available'}
+                      </p>
                     </div>
 
                     <div>
