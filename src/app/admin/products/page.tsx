@@ -40,6 +40,8 @@ export default function AdminProductsPage() {
   const [updatingProducts, setUpdatingProducts] = useState<string[]>([])
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
   const [isBulkUpdating, setIsBulkUpdating] = useState(false)
+  const [isRestockModalOpen, setIsRestockModalOpen] = useState(false)
+  const [restockQuantity, setRestockQuantity] = useState('10')
 
   useEffect(() => {
     if (status === 'loading') {
@@ -59,7 +61,7 @@ export default function AdminProductsPage() {
     fetchCategories()
     fetchProducts()
     fetchLowStockProducts()
-  }, [status, session, router, currentPage, searchQuery, selectedCategory, selectedStatus, selectedStock, selectedQuickFilter, sort])
+  }, [status, session, router, sort])
 
   const fetchCategories = async () => {
     try {
@@ -75,17 +77,13 @@ export default function AdminProductsPage() {
     try {
       setIsLoading(true)
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        pageSize: '12',
-        ...(searchQuery && { search: searchQuery }),
-        ...(selectedCategory && { category: selectedCategory }),
-        ...(selectedStatus && { status: selectedStatus }),
-        ...(selectedStock && { stock: selectedStock }),
+        page: '1',
+        pageSize: '1000',
         sort,
       })
       const response = await fetch(`/api/admin/products?${params}`)
       const data = await response.json()
-      setProducts(data.data.products || [])
+      setProducts(data.data?.products || [])
       setPagination(data.data.pagination)
     } catch (error) {
       console.error('Failed to fetch products:', error)
@@ -159,6 +157,22 @@ export default function AdminProductsPage() {
     fetchLowStockProducts()
   }
 
+  const handleBulkRestock = async () => {
+    const quantity = Number(restockQuantity)
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      toast.error('Enter a positive whole number')
+      return
+    }
+    const selected = products.filter((product) => selectedProducts.includes(product.id))
+    setIsBulkUpdating(true)
+    await Promise.all(selected.map((product) => updateProduct(product, { stock: product.stock + quantity })))
+    setSelectedProducts([])
+    setIsRestockModalOpen(false)
+    setIsBulkUpdating(false)
+    toast.success(`Restocked ${selected.length} products by ${quantity} units each`)
+    fetchLowStockProducts()
+  }
+
   const handleDelete = async (id: string) => {
     try {
       setIsDeleting(true)
@@ -210,10 +224,20 @@ export default function AdminProductsPage() {
   const activeProducts = products.filter((product) => product.isActive).length
   const outOfStock = products.filter((product) => product.stock === 0).length
   const lowStock = products.filter((product) => product.stock > 0 && product.stock <= 10).length
-  const allVisibleSelected = products.length > 0 && products.every((product) => selectedProducts.includes(product.id))
-  const displayedProducts = selectedQuickFilter === 'featured'
-    ? products.filter((product) => product.isFeatured)
-    : products
+  const inventoryFilteredProducts = products.filter((product) => {
+    const query = searchQuery.trim().toLowerCase()
+    const matchesSearch = !query || [product.name, product.sku, product.category?.name || ''].some((value) => value.toLowerCase().includes(query))
+    const matchesCategory = !selectedCategory || product.category?.id === selectedCategory || product.categoryId === selectedCategory
+    const matchesStatus = !selectedStatus || (selectedStatus === 'active' ? product.isActive : !product.isActive)
+    const matchesStock = !selectedStock || (selectedStock === 'in-stock' ? product.stock > 10 : selectedStock === 'low-stock' ? product.stock > 0 && product.stock <= 10 : product.stock === 0)
+    const matchesQuickFilter = !selectedQuickFilter || product.isFeatured
+    return matchesSearch && matchesCategory && matchesStatus && matchesStock && matchesQuickFilter
+  })
+  const displayedProducts = inventoryFilteredProducts.slice((currentPage - 1) * 12, currentPage * 12)
+  const allVisibleSelected = displayedProducts.length > 0 && displayedProducts.every((product) => selectedProducts.includes(product.id))
+  const totalStockUnits = products.reduce((total, product) => total + product.stock, 0)
+  const averageStock = products.length > 0 ? (totalStockUnits / products.length).toFixed(1) : '0.0'
+  const insightProducts = [...products].sort((a, b) => a.stock - b.stock).slice(0, 5)
 
   const setInventoryFilter = (filter: string) => {
     setSelectedQuickFilter(filter === 'featured' ? 'featured' : '')
@@ -288,7 +312,12 @@ export default function AdminProductsPage() {
           </div><span className="absolute right-7 top-7 hidden rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm font-medium sm:block">{totalProducts} total products</span>
         </div></section>
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{ label: 'Total Products', value: totalProducts, icon: Boxes }, { label: 'Active Products', value: activeProducts, icon: CheckCircle2 }, { label: 'Out of Stock', value: outOfStock, icon: X }, { label: 'Low Stock', value: lowStock, icon: AlertTriangle }].map(({ label, value, icon: Icon }, index) => <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }} whileHover={{ y: -4 }} className="rounded-3xl border border-border/70 bg-white/90 p-5 shadow-lg shadow-slate-200/50 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20"><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-3 text-3xl font-bold tracking-tight text-foreground">{value}</p></div><Icon className="h-6 w-6 text-emerald-600" /></div></motion.div>)}</div>
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[
+          { label: 'Total Products', value: products.length, icon: Boxes, tone: 'from-blue-50 to-cyan-50 border-blue-200 text-blue-600' },
+          { label: 'In Stock', value: products.filter((product) => product.stock > 10).length, icon: CheckCircle2, tone: 'from-emerald-50 to-green-50 border-emerald-200 text-emerald-600' },
+          { label: 'Low Stock', value: products.filter((product) => product.stock > 0 && product.stock <= 10).length, icon: AlertTriangle, tone: 'from-amber-50 to-orange-50 border-amber-200 text-amber-600' },
+          { label: 'Out of Stock', value: products.filter((product) => product.stock === 0).length, icon: X, tone: 'from-red-50 to-rose-50 border-red-200 text-red-600' },
+        ].map(({ label, value, icon: Icon, tone }, index) => <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }} whileHover={{ y: -4 }} className={`rounded-3xl border bg-gradient-to-br p-5 shadow-lg shadow-slate-200/50 backdrop-blur dark:bg-slate-900/90 dark:shadow-black/20 ${tone}`}><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="mt-3 text-3xl font-bold tracking-tight text-foreground">{value}</p></div><Icon className="h-6 w-6" /></div></motion.div>)}</div>
 
         {/* Search Bar */}
         <div className="mb-6"><div className="relative">
@@ -421,6 +450,7 @@ export default function AdminProductsPage() {
               <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('decrease')}><Minus className="mr-1 h-4 w-4" />Decrease stock</Button>
               <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('activate')}><ToggleRight className="mr-1 h-4 w-4" />Activate</Button>
               <Button size="sm" variant="outline" disabled={isBulkUpdating} onClick={() => handleBulkUpdate('deactivate')}><ToggleLeft className="mr-1 h-4 w-4" />Deactivate</Button>
+              <Button size="sm" disabled={isBulkUpdating} onClick={() => setIsRestockModalOpen(true)}><Package className="mr-1 h-4 w-4" />Bulk Restock</Button>
               {isBulkUpdating && <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />}
             </div>
           )}
@@ -450,7 +480,7 @@ export default function AdminProductsPage() {
                           ? { label: 'Low Stock', className: 'bg-amber-100 text-amber-700', bar: 'bg-amber-500', width: 'w-1/3' }
                           : { label: 'In Stock', className: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-500', width: 'w-full' }
                       return (
-                      <motion.tr key={product.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className="border-b border-border/70 even:bg-slate-50/50 hover:bg-emerald-50/50 dark:even:bg-slate-800/30 dark:hover:bg-emerald-950/20">
+                      <motion.tr key={product.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className={`border-b border-border/70 transition hover:-translate-y-0.5 ${product.stock === 0 ? 'bg-red-50/70 hover:bg-red-100/70 dark:bg-red-950/20' : product.stock <= 10 ? 'bg-amber-50/70 hover:bg-amber-100/70 dark:bg-amber-950/20' : 'even:bg-slate-50/50 hover:bg-emerald-50/50 dark:even:bg-slate-800/30 dark:hover:bg-emerald-950/20'}`}>
                         <td className="px-6 py-4"><input type="checkbox" aria-label={`Select ${product.name}`} checked={selectedProducts.includes(product.id)} onChange={(event) => setSelectedProducts((current) => event.target.checked ? [...current, product.id] : current.filter((id) => id !== product.id))} /></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -463,6 +493,7 @@ export default function AdminProductsPage() {
                             )}
                             <div>
                               <p className="font-medium text-foreground">{product.name}</p>
+                              {product.stock === 0 ? <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-red-600"><X className="h-3 w-3" />Out of Stock</p> : product.stock <= 10 ? <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-700"><AlertTriangle className="h-3 w-3" />Restock Recommended</p> : null}
                             </div>
                           </div>
                         </td>
@@ -483,6 +514,9 @@ export default function AdminProductsPage() {
                               <input aria-label={`${product.name} stock quantity`} type="number" min="0" value={product.stock} disabled={isUpdating} onChange={(event) => { const stock = Number(event.target.value); if (Number.isInteger(stock) && stock >= 0) updateProduct(product, { stock }) }} className="w-14 rounded-md border border-border bg-transparent px-2 py-1 text-center text-sm font-semibold" />
                               <button type="button" aria-label={`Increase ${product.name} stock`} disabled={isUpdating} onClick={() => handleStockUpdate(product, 1)} className="rounded-md border border-border p-1 transition hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-40"><Plus className="h-3 w-3" /></button>
                               {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {[5, 10].map((amount) => <button key={amount} type="button" disabled={isUpdating} onClick={() => handleStockUpdate(product, amount)} className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold transition hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-40">+{amount}</button>)}
                             </div>
                             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${stockStatus.className}`}>{stockStatus.label}</span>
                             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className={`h-full ${stockStatus.bar} ${stockStatus.width} transition-all`} /></div>
@@ -657,6 +691,14 @@ export default function AdminProductsPage() {
             <p className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 p-6 text-center text-sm font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">All products are sufficiently stocked.</p>
           )}
         </section>
+
+        <section className="mt-8 rounded-3xl border border-border/70 bg-white/85 p-5 shadow-xl shadow-slate-200/50 backdrop-blur sm:p-6 dark:bg-slate-900/85 dark:shadow-black/20">
+          <div className="mb-5 flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold tracking-tight">Inventory Insights</h2><p className="mt-1 text-sm text-muted-foreground">A quick read on the stock position across your store.</p></div><Boxes className="h-6 w-6 text-emerald-600" /></div>
+          <div className="mb-6 grid gap-4 sm:grid-cols-2"><div className="rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 p-4"><p className="text-sm text-muted-foreground">Total stock units</p><p className="mt-2 text-2xl font-bold text-blue-700">{totalStockUnits}</p></div><div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 p-4"><p className="text-sm text-muted-foreground">Average stock per product</p><p className="mt-2 text-2xl font-bold text-emerald-700">{averageStock}</p></div></div>
+          <div className="grid gap-6 lg:grid-cols-2"><div><h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Lowest stock products</h3><div className="space-y-2">{insightProducts.map((product) => <div key={product.id} className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2 text-sm"><span className="truncate pr-3 font-medium">{product.name}</span><span className={`shrink-0 rounded-full px-2 py-1 font-semibold ${product.stock === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{product.stock}</span></div>)}</div></div><div><h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Top 5 needing restock</h3><div className="space-y-2">{insightProducts.filter((product) => product.stock <= 10).map((product) => <div key={product.id} className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2 text-sm"><span className="truncate pr-3 font-medium">{product.sku}</span><Button size="sm" variant="outline" onClick={() => updateProduct(product, { stock: product.stock + 10 })} disabled={updatingProducts.includes(product.id)}>{updatingProducts.includes(product.id) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Restock'}</Button></div>)}</div></div></div>
+        </section>
+
+        {isRestockModalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm"><div role="dialog" aria-modal="true" aria-labelledby="bulk-restock-title" className="w-full max-w-md rounded-3xl border border-border bg-white p-6 shadow-2xl dark:bg-slate-900"><div className="flex items-start justify-between gap-4"><div><h2 id="bulk-restock-title" className="text-xl font-semibold">Bulk Restock</h2><p className="mt-1 text-sm text-muted-foreground">Add the same quantity to {selectedProducts.length} selected products.</p></div><button type="button" aria-label="Close bulk restock modal" onClick={() => setIsRestockModalOpen(false)} className="rounded-full p-2 text-muted-foreground transition hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800"><X className="h-5 w-5" /></button></div><label className="mt-6 block text-sm font-medium">Quantity to add<input autoFocus type="number" min="1" step="1" value={restockQuantity} onChange={(event) => setRestockQuantity(event.target.value)} className="mt-2 w-full rounded-xl border border-border bg-transparent px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500" /></label><div className="mt-6 flex justify-end gap-2"><Button variant="outline" onClick={() => setIsRestockModalOpen(false)}>Cancel</Button><Button onClick={handleBulkRestock} disabled={isBulkUpdating}>{isBulkUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Restock Products'}</Button></div></div></div>}
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
